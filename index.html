@@ -235,25 +235,86 @@ const COMM_LEVELS = [
 ];
 const STAGE_NAMES = ["", "Single Words", "Two-Word Phrases", "Short Sentences", "Conversations", "Fluent Chatter"];
 
+/* ---------------- Text-to-Speech helper ---------------- */
+function speak(text, opts = {}) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[🌊🐢🐬🦑🫧⭐💙🌟✨🐠💎👋🎤🔒🐟]/gu, ''));
+  u.rate = opts.rate || 0.88;
+  u.pitch = opts.pitch || 1.1;
+  u.volume = opts.volume || 1;
+  // prefer a female English voice when available
+  const voices = window.speechSynthesis.getVoices();
+  const pick = voices.find(v => /en[-_](GB|US|AU)/i.test(v.lang) && /female|woman|girl|samantha|karen|victoria|moira|tessa|fiona|kate/i.test(v.name))
+            || voices.find(v => /en[-_]/i.test(v.lang));
+  if (pick) u.voice = pick;
+  window.speechSynthesis.speak(u);
+}
+// Ensure voices are loaded (Chrome lazy-loads them)
+if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+/* ---------------- AudioContext sound effects ---------------- */
+function playTone(freq = 440, type = 'sine', dur = 0.18, vol = 0.18) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+    setTimeout(() => ctx.close(), dur * 1000 + 100);
+  } catch(e) {}
+}
+function playCelebration() {
+  [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.22, 0.15), i * 90));
+}
+function playPop() { playTone(880, 'sine', 0.1, 0.12); }
+function playTap() { playTone(660, 'triangle', 0.08, 0.1); }
+function playListening() { playTone(440, 'sine', 0.12, 0.08); setTimeout(() => playTone(550, 'sine', 0.12, 0.08), 130); }
+
 /* ---------------- Speech recognition hook ---------------- */
 function useSpeech() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recRef = useRef(null);
-  const available = !!SR;
+  const [available, setAvailable] = useState(!!SR);
+  const [micError, setMicError] = useState(null);
+
   const listen = useCallback((onResult, onEnd) => {
-    if (!SR) { onEnd && onEnd(null); return; }
+    if (!SR) { setAvailable(false); onEnd && onEnd(null); return; }
     try {
       const r = new SR(); recRef.current = r;
-      r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3;
+      r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3; r.continuous = false;
       let got = null;
-      r.onresult = e => { got = e.results[0][0].transcript.toLowerCase().trim(); onResult(got); };
+      r.onresult = e => {
+        got = e.results[0][0].transcript.toLowerCase().trim();
+        setMicError(null);
+        onResult(got);
+      };
       r.onend = () => onEnd && onEnd(got);
-      r.onerror = () => {};
+      r.onerror = (e) => {
+        const msg = e.error;
+        if (msg === 'not-allowed' || msg === 'service-not-allowed') {
+          setAvailable(false);
+          setMicError('Microphone permission denied. Please allow microphone access in your browser settings.');
+        } else if (msg === 'no-speech') {
+          setMicError(null); // treated as silence — normal
+        } else if (msg === 'network') {
+          setMicError('Speech recognition needs an internet connection.');
+        } else {
+          setMicError('Microphone error: ' + msg);
+        }
+        onEnd && onEnd(null);
+      };
       r.start();
     } catch(e) { onEnd && onEnd(null); }
   }, [SR]);
+
   const stop = useCallback(() => { try { recRef.current && recRef.current.stop(); } catch(e){} }, []);
-  return { available, listen, stop };
+  return { available, listen, stop, micError };
 }
 
 /* ---------------- Helpers ---------------- */
@@ -430,11 +491,15 @@ function World({ state, setState, openGame, openAquarium, openParent }) {
   const pecs = state.pecsMode || !speech.available;
   const compEmoji = COMPANION_EMOJI[state.companionType] || "🐢";
 
+  // Speak companion text whenever it changes
+  useEffect(() => { if (text) speak(text); }, [text]);
+
   useEffect(() => {
-    setText(`Hi ${state.childName}! I've been waiting for you! Ready to explore the ocean? 🌊`);
+    const greeting = `Hi ${state.childName}! I've been waiting for you! Ready to explore the ocean?`;
+    setText(greeting);
     setState(prev => { const ns = { ...prev, totalSessions: prev.totalSessions + 1 }; saveState(ns); return ns; });
-    const t = setTimeout(()=> newTarget(), 3200);
-    return ()=> clearTimeout(t);
+    const t = setTimeout(()=> newTarget(), 3400);
+    return ()=> { clearTimeout(t); window.speechSynthesis && window.speechSynthesis.cancel(); };
   // eslint-disable-next-line
   }, []);
 
@@ -461,23 +526,28 @@ function World({ state, setState, openGame, openAquarium, openParent }) {
   function evaluate(said) {
     const tier = matchTier(said, target.word);
     if (tier === "exact") {
-      setMood("CELEBRATING"); setText(`Amazing! You said ${target.word.toUpperCase()}! ⭐`);
+      playCelebration();
+      setMood("CELEBRATING"); setText(`Amazing! You said ${target.word.toUpperCase()}!`);
       recordAttempt(target.word, true); addReward(setState); fire("⭐ Amazing! ⭐");
     } else if (tier === "close") {
-      setMood("CELEBRATING"); setText(`So close — great trying! ${target.word.toUpperCase()}! 💙`);
+      playCelebration();
+      setMood("CELEBRATING"); setText(`So close — great trying! ${target.word}!`);
       recordAttempt(target.word, false); addReward(setState); fire("💙 Great job! 💙");
     } else if (tier === "any") {
-      setMood("ENCOURAGING"); setText(`That's great! Try again! You can do it! 💙`);
+      playTap();
+      setMood("ENCOURAGING"); setText(`That's great! Try again! You can do it!`);
       recordAttempt(target.word, false);
     } else {
-      setMood("TEACHING"); setText(`Let's try together. Can you say... ${target.word.toUpperCase()}? ${target.emoji}`);
+      playTap();
+      setMood("TEACHING"); setText(`Let's try together. Can you say... ${target.word}?`);
     }
-    setTimeout(newTarget, 3000);
+    setTimeout(newTarget, 3200);
   }
 
   function onMic() {
     if (pecs) return;
-    setMood("LISTENING"); setText("I'm listening... 🎤");
+    playListening();
+    setMood("LISTENING"); setText("I'm listening...");
     speech.listen(()=>{}, result => evaluate(result));
   }
 
@@ -499,19 +569,24 @@ function World({ state, setState, openGame, openAquarium, openParent }) {
         {pecs && (mood==="WAITING"||mood==="TEACHING"||mood==="ENCOURAGING") && (
           <div className="pecs-grid" style={{marginTop:18}}>
             {WORD_BANK.slice(0,6).map(w=>(
-              <div key={w.word} className="pecs" onClick={()=>evaluate(w.word)}>
+              <div key={w.word} className="pecs" onClick={()=>{ playTap(); evaluate(w.word); }}>
                 <div className="e">{w.emoji}</div><div className="t">{w.word}</div>
               </div>
             ))}
           </div>
         )}
+        {speech.micError && (
+          <div style={{marginTop:10,background:'rgba(255,80,80,0.18)',border:'1px solid #ff6b6b',borderRadius:12,padding:'8px 14px',color:'#ffdddd',fontSize:'0.85rem',maxWidth:320,textAlign:'center'}}>
+            🎤 {speech.micError}
+          </div>
+        )}
       </div>
 
       <div className="bottombar">
-        <button className="actbtn" onClick={()=>openGame('feed')}>🐬<span>Feed</span></button>
-        <button className="actbtn" onClick={()=>openGame('bubble')}>🫧<span>Pop</span></button>
-        <button className="actbtn" onClick={()=>openGame('find')}>🐢<span>Find</span></button>
-        <button className="actbtn" onClick={()=>openGame('name')}>🦑<span>Name</span></button>
+        <button className="actbtn" onClick={()=>{ playTap(); openGame('feed'); }}>🐬<span>Feed</span></button>
+        <button className="actbtn" onClick={()=>{ playTap(); openGame('bubble'); }}>🫧<span>Pop</span></button>
+        <button className="actbtn" onClick={()=>{ playTap(); openGame('find'); }}>🐢<span>Find</span></button>
+        <button className="actbtn" onClick={()=>{ playTap(); openGame('name'); }}>🦑<span>Name</span></button>
         {!pecs && <button className={"actbtn mic"+(mood==="LISTENING"?" on":"")} onClick={onMic}>🎤<span>Speak</span></button>}
         <button className="actbtn" onClick={openParent}>🔒<span>Parent</span></button>
       </div>
@@ -545,24 +620,27 @@ function FeedGame({ state, onReward, onClose }) {
   const pecs = state.pecsMode || !speech.available;
   const cur = target[round];
   const curFood = foods.find(f=>f.w===cur);
+  const prompt = `What should we feed Dolphin? Can you say... ${cur}?`;
+  useEffect(() => { speak(prompt); }, [round]);
   function pick(w) {
     const tier = matchTier(w, cur);
     if (tier==="exact" || tier==="close") {
-      setHappy(true); celebrateInline(setMsg, "Yum! 🐬");
+      playCelebration(); setHappy(true); celebrateInline(setMsg, "Yum! 🐬");
+      speak("Yum! The dolphin loves it!");
       setTimeout(()=>{ setHappy(false);
         if (round < 2) setRound(r=>r+1);
-        else { onReward(); celebrateInline(setMsg,"⭐ All fed! New friend! ⭐"); setTimeout(onClose,1500); }
+        else { onReward(); celebrateInline(setMsg,"⭐ All fed! New friend! ⭐"); speak("Amazing! You fed the dolphin! You earned a new friend!"); setTimeout(onClose,1500); }
       }, 1100);
-    } else celebrateInline(setMsg, "Try again! 💙");
+    } else { playTap(); celebrateInline(setMsg, "Try again! 💙"); speak("Try again! You can do it!"); }
   }
-  function mic(){ speech.listen(()=>{}, r=>pick(r||"")); }
+  function mic(){ playListening(); speech.listen(()=>{}, r=>pick(r||"")); }
   return (
     <GameShell title="🐬 Feed the Dolphin" onClose={onClose}>
       <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 3</div>
       <div className={"companion"+(happy?" happy":"")} style={{fontSize:90,textAlign:'center'}}>🐬</div>
-      <div className="speech" style={{margin:'12px auto'}}>What should we feed Dolphin? Can you say... {cur.toUpperCase()}? {curFood.e}</div>
+      <div className="speech" style={{margin:'12px auto'}}>{prompt} {curFood.e}</div>
       <div className="pill-grid">
-        {foods.map(f=><div key={f.w} className="gameopt" onClick={()=>pick(f.w)}>{f.e}<span>{f.w}</span></div>)}
+        {foods.map(f=><div key={f.w} className="gameopt" onClick={()=>{ playTap(); pick(f.w); }}>{f.e}<span>{f.w}</span></div>)}
       </div>
       {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
       {msg && <Celebration text={msg} />}
@@ -578,19 +656,20 @@ function BubbleGame({ state, onReward, onClose }) {
   const speech = useSpeech();
   const pecs = state.pecsMode || !speech.available;
   const cur = items[round % items.length];
+  useEffect(() => { speak(`Pop the ${cur.w} bubble! Say ${cur.w}!`); }, [round]);
   function pop(w) {
-    if (w===cur.w) { celebrateInline(setMsg,"Pop! 🫧");
-      setTimeout(()=>{ if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ All popped! ⭐"); setTimeout(onClose,1500);} },1000);
-    } else celebrateInline(setMsg,"Try the "+cur.w+"! 💙");
+    if (w===cur.w) { playCelebration(); celebrateInline(setMsg,"Pop! 🫧"); speak("Pop! Great job!");
+      setTimeout(()=>{ if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ All popped! ⭐"); speak("Amazing! You popped all the bubbles!"); setTimeout(onClose,1500);} },1000);
+    } else { playTap(); celebrateInline(setMsg,"Try the "+cur.w+"! 💙"); speak("Try the "+cur.w+" bubble!"); }
   }
-  function mic(){ speech.listen(()=>{}, r=>{ const said=(r||""); const hit=items.find(i=>said.includes(i.w)); pop(hit?hit.w:said); }); }
+  function mic(){ playListening(); speech.listen(()=>{}, r=>{ const said=(r||""); const hit=items.find(i=>said.includes(i.w)); pop(hit?hit.w:said); }); }
   return (
     <GameShell title="🫧 Bubble Pop" onClose={onClose}>
       <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 5</div>
       <div className="speech" style={{margin:'10px auto'}}>Pop the {cur.w.toUpperCase()} bubble! Say {cur.w.toUpperCase()}!</div>
       <div className="pill-grid">
         {items.map(it=>(
-          <div key={it.w} className="gameopt" style={{background:it.c,color:'#fff',borderRadius:'50%',width:110,height:110,margin:'0 auto'}} onClick={()=>pop(it.w)}>
+          <div key={it.w} className="gameopt" style={{background:it.c,color:'#fff',borderRadius:'50%',width:110,height:110,margin:'0 auto'}} onClick={()=>{ playPop(); pop(it.w); }}>
             🫧<span>{it.w}</span>
           </div>
         ))}
@@ -610,22 +689,23 @@ function FindGame({ state, onReward, onClose }) {
   const [found, setFound] = useState(false);
   const speech = useSpeech();
   const pecs = state.pecsMode || !speech.available;
+  useEffect(() => { speak(`The turtle is hiding! Can you look behind the ${spots[hide].w}?`); }, [round, hide]);
   function pick(i) {
-    if (i===hide) { setFound(true); celebrateInline(setMsg,"Found you! 🐢");
+    if (i===hide) { playCelebration(); setFound(true); celebrateInline(setMsg,"Found you! 🐢"); speak("You found the turtle! Brilliant!");
       setTimeout(()=>{ setFound(false);
         if (round<2) { setRound(r=>r+1); setHide(Math.floor(Math.random()*3)); }
-        else { onReward(); celebrateInline(setMsg,"⭐ Turtle master! ⭐"); setTimeout(onClose,1500); }
+        else { onReward(); celebrateInline(setMsg,"⭐ Turtle master! ⭐"); speak("Amazing! You are a turtle master!"); setTimeout(onClose,1500); }
       },1100);
-    } else celebrateInline(setMsg,"Look somewhere else! 💙");
+    } else { playTap(); celebrateInline(setMsg,"Look somewhere else! 💙"); speak("Not there! Look somewhere else!"); }
   }
-  function mic(){ speech.listen(()=>{}, r=>{ const s=spots.findIndex(x=>(r||"").includes(x.w)); if(s>=0)pick(s); else celebrateInline(setMsg,"Try again! 💙"); }); }
+  function mic(){ playListening(); speech.listen(()=>{}, r=>{ const s=spots.findIndex(x=>(r||"").includes(x.w)); if(s>=0)pick(s); else { playTap(); celebrateInline(setMsg,"Try again! 💙"); } }); }
   return (
     <GameShell title="🐢 Find the Turtle" onClose={onClose}>
       <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 3</div>
       <div className="speech" style={{margin:'10px auto'}}>The turtle is hiding... can you look BEHIND the {spots[hide].w.toUpperCase()}?</div>
       <div className="pill-grid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
         {spots.map((s,i)=>(
-          <div key={s.w} className="gameopt" onClick={()=>pick(i)}>{found&&i===hide?"🐢":s.e}<span>{s.w}</span></div>
+          <div key={s.w} className="gameopt" onClick={()=>{ playTap(); pick(i); }}>{found&&i===hide?"🐢":s.e}<span>{s.w}</span></div>
         ))}
       </div>
       {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
@@ -650,21 +730,22 @@ function NameGame({ state, onReward, onClose }) {
   const pecs = state.pecsMode || !speech.available;
   const cur = animals[round];
   const opts = [cur, animals[(round+1)%5], animals[(round+2)%5]];
+  useEffect(() => { speak("Look who's visiting! Who is this?"); }, [round]);
   function pick(w) {
-    if (w===cur.w) { setShowFact(true); celebrateInline(setMsg,"Yes! ⭐");
+    if (w===cur.w) { playCelebration(); setShowFact(true); celebrateInline(setMsg,"Yes! ⭐"); speak("Yes! " + cur.fact);
       setTimeout(()=>{ setShowFact(false);
-        if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ Animal expert! ⭐"); setTimeout(onClose,1500);}
+        if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ Animal expert! ⭐"); speak("You are an animal expert! Amazing!"); setTimeout(onClose,1500);}
       },1900);
-    } else celebrateInline(setMsg,"Try again! 💙");
+    } else { playTap(); celebrateInline(setMsg,"Try again! 💙"); speak("Try again! You can do it!"); }
   }
-  function mic(){ speech.listen(()=>{}, r=>{ const said=(r||""); const hit=animals.find(a=>said.includes(a.w)); pick(hit?hit.w:said); }); }
+  function mic(){ playListening(); speech.listen(()=>{}, r=>{ const said=(r||""); const hit=animals.find(a=>said.includes(a.w)); pick(hit?hit.w:said); }); }
   return (
     <GameShell title="🦑 Name the Animal" onClose={onClose}>
       <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 5</div>
       <div className="companion" style={{fontSize:90,textAlign:'center'}}>{cur.e}</div>
       <div className="speech" style={{margin:'12px auto'}}>{showFact ? cur.fact+" 🌟" : "Look who's visiting! Who is this?"}</div>
       <div className="pill-grid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
-        {opts.map(o=><div key={o.w} className="gameopt" onClick={()=>pick(o.w)}>{o.e}<span>{o.w}</span></div>)}
+        {opts.map(o=><div key={o.w} className="gameopt" onClick={()=>{ playTap(); pick(o.w); }}>{o.e}<span>{o.w}</span></div>)}
       </div>
       {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
       {msg && <Celebration text={msg} />}
