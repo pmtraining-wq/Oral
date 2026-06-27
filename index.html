@@ -1,1672 +1,872 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Oral — Speech & Language Companion</title>
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Ocean Voices 🌊</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',Arial,sans-serif;background:#1a1a2e;color:#fff;overflow:hidden;height:100vh;width:100vw}
-  #root{height:100vh;width:100vw}
-  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .btn{padding:14px 32px;border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px}
-  .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 20px rgba(102,126,234,.5)}
-  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(102,126,234,.7)}
-  .btn-green{background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff}
-  .btn-green:hover{transform:translateY(-2px)}
-  .btn-orange{background:linear-gradient(135deg,#f7971e,#ffd200);color:#333}
-  .btn-sm{padding:8px 20px;font-size:.9rem}
-  canvas{display:block}
+  :root {
+    --deep: #0a1628;
+    --ocean: #0d4f7c;
+    --teal: #00a8a8;
+    --light: #7fd7e8;
+    --gold: #ffd700;
+    --coral: #ff6b6b;
+    --cream: #fffdf5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--deep);
+    color: var(--cream);
+    user-select: none;
+  }
+  #bgCanvas { position: fixed; inset: 0; z-index: 0; }
+  .app { position: relative; z-index: 1; height: 100%; width: 100%; overflow-y: auto; }
+  .center-col { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; padding: 24px; text-align: center; }
 
-  /* Welcome */
-  .welcome-bg{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
-  .welcome-title{font-size:4rem;font-weight:900;background:linear-gradient(135deg,#667eea,#764ba2,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
-  .welcome-sub{font-size:1.2rem;color:#a0a0c0;text-align:center;max-width:500px;line-height:1.6}
-  .welcome-fish{font-size:3rem;animation:fishsway 2s ease-in-out infinite}
-  @keyframes fishsway{0%,100%{transform:translateX(-10px) rotate(-5deg)}50%{transform:translateX(10px) rotate(5deg)}}
+  button { font-family: inherit; cursor: pointer; border: none; }
+  .btn {
+    min-height: 56px; border-radius: 50px; padding: 16px 32px; font-size: 20px; font-weight: 800;
+    color: #fff; background: linear-gradient(135deg, var(--teal), var(--ocean));
+    box-shadow: 0 8px 20px rgba(0,168,168,.35); transition: transform .15s, box-shadow .15s; margin: 8px;
+  }
+  .btn:active { transform: scale(.95); }
+  .btn.gold { background: linear-gradient(135deg, var(--gold), #ffb300); color: #4a3000; box-shadow: 0 8px 20px rgba(255,215,0,.4); }
+  .btn.coral { background: linear-gradient(135deg, var(--coral), #e85555); }
+  .btn.ghost { background: rgba(255,255,255,.12); box-shadow: none; border: 2px solid rgba(255,255,255,.3); }
+  .btn.sm { min-height: 44px; padding: 10px 18px; font-size: 15px; border-radius: 30px; }
 
-  /* Wizard */
-  .wizard-wrap{background:linear-gradient(135deg,#0f0c29,#302b63);width:100%;height:100%;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:20px}
-  .wizard-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:40px;max-width:640px;width:100%}
-  .wizard-title{font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:8px;background:linear-gradient(135deg,#667eea,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .wizard-q{font-size:1.1rem;color:#c0c0e0;text-align:center;margin-bottom:24px;line-height:1.5}
-  .wizard-option{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:12px;border:2px solid rgba(255,255,255,.1);margin-bottom:10px;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.03)}
-  .wizard-option:hover,.wizard-option.selected{border-color:#667eea;background:rgba(102,126,234,.15)}
-  .wizard-option-num{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0}
-  .wizard-option-text{font-size:1rem;color:#e0e0f0}
-  .level-confirm{text-align:center;margin-top:24px;padding:24px;background:rgba(255,255,255,.05);border-radius:16px;border:1px solid rgba(102,126,234,.3)}
-  .level-name{font-size:1.8rem;font-weight:800;color:#f093fb}
-  .level-desc{font-size:1rem;color:#a0a0c0;margin:8px 0 16px}
-  .level-adj{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px}
-  .adj-btn{width:40px;height:40px;border-radius:50%;border:2px solid #667eea;background:transparent;color:#667eea;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;transition:all .2s}
-  .adj-btn:hover{background:#667eea;color:#fff}
-  .adj-num{font-size:2rem;font-weight:900;color:#fff;min-width:48px;text-align:center}
+  .logo { font-size: 64px; font-weight: 900; text-shadow: 0 4px 24px rgba(0,168,168,.6); letter-spacing: 1px; }
+  .tagline { font-size: 18px; opacity: .9; margin: 12px 0 32px; max-width: 460px; line-height: 1.5; }
 
-  /* Talk UI overlay */
-  .talk-overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column}
-  .talk-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.4);pointer-events:all;backdrop-filter:blur(6px)}
-  .stars-bar{flex:1;max-width:400px;margin:0 auto}
-  .stars-label{font-size:.8rem;color:#ffd200;margin-bottom:4px;text-align:center}
-  .stars-track{height:12px;background:rgba(255,255,255,.15);border-radius:6px;overflow:hidden}
-  .stars-fill{height:100%;background:linear-gradient(90deg,#ffd200,#ff6b35);border-radius:6px;transition:width .4s}
-  .star-count{font-size:.85rem;color:#ffd200;text-align:center;margin-top:2px}
-  .talk-bottom{margin-top:auto;padding:16px;background:rgba(0,0,0,.5);pointer-events:all;backdrop-filter:blur(6px)}
-  .input-row{display:flex;gap:10px;align-items:center;max-width:700px;margin:0 auto}
-  .text-input{flex:1;padding:12px 18px;border-radius:50px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:1rem;outline:none}
-  .text-input:focus{border-color:#667eea}
-  .text-input::placeholder{color:rgba(255,255,255,.4)}
-  .mic-btn{width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;transition:all .2s;flex-shrink:0}
-  .mic-idle{background:linear-gradient(135deg,#667eea,#764ba2)}
-  .mic-active{background:linear-gradient(135deg,#ff4444,#ff0000);animation:pulse .8s ease-in-out infinite}
-  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
-  .mic-listening-label{font-size:.75rem;color:#ff6666;text-align:center;margin-top:4px;min-height:16px}
-  .send-btn{width:52px;height:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff;font-size:1.4rem;cursor:pointer;flex-shrink:0;transition:all .2s}
-  .send-btn:hover{transform:scale(1.05)}
-  .icon-btn{background:transparent;border:none;color:#fff;font-size:1.3rem;cursor:pointer;padding:6px;border-radius:8px;transition:all .2s;opacity:.8}
-  .icon-btn:hover{opacity:1;background:rgba(255,255,255,.1)}
-  .level-badge{font-size:.75rem;color:#a0a0c0;text-align:center;padding:4px 10px;background:rgba(255,255,255,.08);border-radius:20px;white-space:nowrap}
-  .type-toggle{font-size:.7rem;color:#a0a0c0;cursor:pointer;text-decoration:underline;text-align:center;margin-top:4px;background:transparent;border:none;color:#667eea}
+  .card {
+    background: rgba(13,79,124,.55); backdrop-filter: blur(10px); border: 1px solid rgba(127,215,232,.25);
+    border-radius: 16px; padding: 20px; margin: 10px 0;
+  }
+  .panel {
+    background: rgba(10,22,40,.82); backdrop-filter: blur(14px); border: 1px solid rgba(127,215,232,.3);
+    border-radius: 24px; padding: 28px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  }
+  h2 { font-size: 26px; margin-bottom: 6px; }
+  .sub { opacity: .8; margin-bottom: 20px; font-size: 15px; }
+  label { display: block; font-weight: 700; margin: 16px 0 6px; font-size: 15px; }
+  input[type=text], input[type=number], select {
+    width: 100%; padding: 14px; border-radius: 12px; border: 2px solid rgba(127,215,232,.4);
+    background: rgba(255,255,255,.95); color: var(--deep); font-size: 18px; font-weight: 700; font-family: inherit;
+  }
+  input[type=range] { width: 100%; accent-color: var(--teal); height: 40px; }
+  .pill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt {
+    padding: 14px; border-radius: 14px; border: 2px solid rgba(127,215,232,.3); background: rgba(255,255,255,.06);
+    font-weight: 700; font-size: 15px; text-align: center; min-height: 56px; display: flex; align-items: center; justify-content: center; transition: all .15s;
+  }
+  .opt.active { background: var(--teal); border-color: var(--light); box-shadow: 0 6px 16px rgba(0,168,168,.4); }
+  .opt.big { font-size: 38px; flex-direction: column; gap: 4px; }
+  .opt.big span { font-size: 14px; }
 
-  /* Fish game */
-  .fish-overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column}
-  .fish-top{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(0,0,20,.6);pointer-events:all;backdrop-filter:blur(6px)}
-  .fish-progress-wrap{flex:1;max-width:400px;margin:0 16px}
-  .fish-progress-label{font-size:.85rem;color:#38ef7d;text-align:center;margin-bottom:4px}
-  .fish-track{height:14px;background:rgba(255,255,255,.1);border-radius:7px;overflow:hidden}
-  .fish-fill{height:100%;background:linear-gradient(90deg,#11998e,#38ef7d);border-radius:7px;transition:width .4s}
-  .fish-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,50,.7);padding:10px 24px;border-radius:30px;font-size:.9rem;color:#a0d0ff;pointer-events:none;backdrop-filter:blur(4px)}
+  .steps { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.3); }
+  .dot.on { background: var(--gold); }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .toggle { width: 56px; height: 32px; border-radius: 20px; background: rgba(255,255,255,.25); position: relative; transition: background .2s; flex: 0 0 auto; }
+  .toggle.on { background: var(--teal); }
+  .toggle .knob { width: 26px; height: 26px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: left .2s; }
+  .toggle.on .knob { left: 27px; }
 
-  /* Celebration */
-  .celebration{position:absolute;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:100}
-  .celebration-emoji{font-size:5rem;animation:bounce .6s ease-in-out infinite alternate}
-  @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-20px)}}
-  .celebration-title{font-size:2.2rem;font-weight:900;background:linear-gradient(135deg,#ffd200,#ff6b35,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
-  .confetti-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-  .confetti-piece{position:absolute;width:10px;height:10px;border-radius:2px;animation:confettiFall linear forwards}
-  @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+  /* Child world */
+  .topbar { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; padding: 16px; z-index: 5; }
+  .badge { background: rgba(10,22,40,.7); backdrop-filter: blur(8px); border-radius: 30px; padding: 10px 18px; font-weight: 800; font-size: 17px; border: 1px solid rgba(127,215,232,.3); }
+  .companion { font-size: 120px; line-height: 1; filter: drop-shadow(0 10px 20px rgba(0,0,0,.4)); animation: bob 3s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-18px) } }
+  .companion.happy { animation: happy .5s ease-in-out infinite; }
+  @keyframes happy { 0%,100%{ transform: translateY(0) rotate(-6deg) } 50%{ transform: translateY(-30px) rotate(6deg) } }
+  .speech {
+    background: var(--cream); color: var(--deep); border-radius: 24px; padding: 18px 24px; max-width: 420px;
+    font-size: 22px; font-weight: 800; line-height: 1.35; position: relative; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin-bottom: 14px;
+  }
+  .speech::after { content: ""; position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); border: 14px solid transparent; border-top-color: var(--cream); border-bottom: none; }
+  .listening { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{ box-shadow: 0 12px 30px rgba(0,168,168,.3) } 50%{ box-shadow: 0 12px 40px rgba(0,168,168,.8) } }
 
-  /* Dashboard */
-  .dash-wrap{background:linear-gradient(135deg,#0f0c29,#1a0533);width:100%;height:100%;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;padding-top:30px}
-  .dash-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px;max-width:700px;width:100%}
-  .dash-title{font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:24px;background:linear-gradient(135deg,#667eea,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .dash-section{margin-bottom:24px}
-  .dash-section-title{font-size:.9rem;text-transform:uppercase;letter-spacing:1px;color:#667eea;margin-bottom:12px;border-bottom:1px solid rgba(102,126,234,.3);padding-bottom:6px}
-  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-  .stat-card{background:rgba(255,255,255,.05);border-radius:12px;padding:16px;text-align:center;border:1px solid rgba(255,255,255,.08)}
-  .stat-val{font-size:2rem;font-weight:900;color:#ffd200}
-  .stat-label{font-size:.8rem;color:#a0a0c0;margin-top:4px}
-  .level-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-  .level-row-name{font-size:.85rem;color:#c0c0e0;width:140px;flex-shrink:0}
-  .level-row-track{flex:1;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden}
-  .level-row-fill{height:100%;background:linear-gradient(90deg,#667eea,#f093fb);border-radius:4px}
-  .level-row-status{font-size:.75rem;color:#a0a0c0;width:60px;text-align:right;flex-shrink:0}
-  .pin-screen{background:rgba(0,0,0,.9);position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
-  .pin-title{font-size:1.4rem;font-weight:700;color:#667eea}
-  .pin-input{padding:12px 24px;border-radius:12px;border:2px solid #667eea;background:rgba(255,255,255,.1);color:#fff;font-size:1.4rem;text-align:center;letter-spacing:6px;width:180px;outline:none}
-  .pin-error{color:#ff6666;font-size:.9rem}
-  .info-box{background:rgba(102,126,234,.1);border:1px solid rgba(102,126,234,.3);border-radius:12px;padding:16px;font-size:.85rem;color:#c0c0e0;line-height:1.6}
+  .bottombar { position: absolute; bottom: 0; left: 0; right: 0; display: flex; gap: 8px; padding: 14px; justify-content: center; flex-wrap: wrap; z-index: 5; background: linear-gradient(transparent, rgba(10,22,40,.6)); }
+  .actbtn { min-width: 70px; min-height: 64px; border-radius: 18px; background: rgba(13,79,124,.85); border: 1px solid rgba(127,215,232,.3); color:#fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 26px; font-weight: 700; }
+  .actbtn span { font-size: 11px; }
+  .mic { min-width: 84px; background: linear-gradient(135deg, var(--coral), #e85555); font-size: 32px; box-shadow: 0 6px 18px rgba(255,107,107,.5); }
+  .mic.on { animation: pulse 1s infinite; }
 
-  /* Star burst */
-  .star-burst{position:absolute;pointer-events:none;font-size:2rem;animation:starPop .8s forwards}
-  @keyframes starPop{0%{transform:scale(0) translateY(0);opacity:1}50%{transform:scale(1.4) translateY(-30px);opacity:1}100%{transform:scale(0.8) translateY(-60px);opacity:0}}
+  .wave { display: flex; gap: 4px; align-items: flex-end; height: 40px; justify-content: center; margin: 10px 0; }
+  .wave i { width: 6px; background: var(--teal); border-radius: 4px; animation: wv .8s ease-in-out infinite; }
+  @keyframes wv { 0%,100%{ height: 8px } 50%{ height: 36px } }
 
-  /* API key prompt */
-  .apikey-screen{background:linear-gradient(135deg,#0f0c29,#302b63);position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:30px}
-  .apikey-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:32px;max-width:500px;width:100%;text-align:center}
-  .apikey-title{font-size:1.5rem;font-weight:800;color:#f093fb;margin-bottom:12px}
-  .apikey-input{width:100%;padding:12px 16px;border-radius:10px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:.95rem;outline:none;margin-bottom:16px}
-  .apikey-input:focus{border-color:#667eea}
-  .apikey-note{font-size:.8rem;color:#808090;line-height:1.5;margin-top:12px}
+  .pecs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; max-width: 480px; margin: 0 auto; }
+  .pecs { background: var(--cream); color: var(--deep); border-radius: 16px; padding: 14px 8px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 90px; }
+  .pecs .e { font-size: 40px; }
+  .pecs .t { font-size: 14px; }
+
+  .overlay { position: fixed; inset: 0; z-index: 50; background: rgba(10,22,40,.85); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 20px; }
+  .modal { width: 100%; max-width: 560px; }
+  .celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .celebrate .txt { font-size: 44px; font-weight: 900; color: var(--gold); text-shadow: 0 4px 20px rgba(0,0,0,.5); animation: pop .6s ease; }
+  @keyframes pop { 0%{ transform: scale(0) } 60%{ transform: scale(1.2) } 100%{ transform: scale(1) } }
+  .confetti { position: absolute; font-size: 30px; animation: fall 1.4s ease-in forwards; }
+  @keyframes fall { 0%{ transform: translateY(-40px) scale(.5); opacity: 1 } 100%{ transform: translateY(60vh) scale(1.3); opacity: 0 } }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab { padding: 10px 16px; border-radius: 30px; background: rgba(255,255,255,.08); font-weight: 700; font-size: 14px; }
+  .tab.on { background: var(--teal); }
+  .stat { background: rgba(13,79,124,.5); border-radius: 16px; padding: 16px; text-align: center; }
+  .stat .n { font-size: 32px; font-weight: 900; color: var(--light); }
+  .stat .l { font-size: 13px; opacity: .85; margin-top: 4px; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bar-track { height: 14px; border-radius: 10px; background: rgba(255,255,255,.15); overflow: hidden; margin: 8px 0; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--light)); border-radius: 10px; transition: width .4s; }
+  .tip { display: flex; gap: 12px; align-items: flex-start; }
+  .tip .ic { font-size: 28px; }
+  .crt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 12px; }
+  .crt { background: rgba(13,79,124,.5); border-radius: 16px; padding: 14px; text-align: center; border: 1px solid rgba(127,215,232,.25); }
+  .crt .e { font-size: 46px; }
+  .crt .n { font-weight: 800; margin-top: 6px; }
+  .crt .d { font-size: 11px; opacity: .7; margin-top: 2px; }
+  .pin-dots { display: flex; gap: 12px; justify-content: center; margin: 18px 0; }
+  .pin-dots div { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--light); }
+  .pin-dots div.f { background: var(--gold); border-color: var(--gold); }
+  .keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; max-width: 260px; margin: 0 auto; }
+  .keypad button { min-height: 56px; font-size: 24px; font-weight: 800; border-radius: 14px; background: rgba(255,255,255,.1); color: #fff; }
+  .scroll { max-height: 88vh; overflow-y: auto; }
+  .gameopt { background: var(--cream); color: var(--deep); border-radius: 18px; padding: 18px; font-size: 40px; font-weight: 800; display:flex; flex-direction:column; align-items:center; gap:6px; min-height: 100px; }
+  .gameopt span { font-size: 16px; }
+  ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: rgba(127,215,232,.4); border-radius: 4px; }
 </style>
 </head>
 <body>
+<canvas id="bgCanvas"></canvas>
 <div id="root"></div>
 
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
-// ── Storage ──────────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'oral_v2_state';
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch(e) {}
-  return null;
-}
-function saveState(s) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {}
-}
-
-// ── Level data ────────────────────────────────────────────────────────────────
-const LEVELS = [
-  { num:1,  name:'First Sounds',   emoji:'🔊', stars:4,  fish:3,  desc:'Any vocalisation — even a sound is celebrated!' },
-  { num:2,  name:'First Word',     emoji:'💬', stars:5,  fish:3,  desc:'A single recognisable word like "hi" or "yes".' },
-  { num:3,  name:'Two Words',      emoji:'🗣️', stars:5,  fish:3,  desc:'Combine two words like "blue fish" or "I like".' },
-  { num:4,  name:'Short Phrase',   emoji:'📢', stars:6,  fish:4,  desc:'3–4 word phrases like "I like fish".' },
-  { num:5,  name:'Simple Sentence',emoji:'💡', stars:7,  fish:4,  desc:'5–7 word complete sentences.' },
-  { num:6,  name:'Full Sentence',  emoji:'✨', stars:8,  fish:4,  desc:'8–10 word detailed sentences.' },
-  { num:7,  name:'Two Sentences',  emoji:'🌟', stars:9,  fish:5,  desc:'Two connected ideas joined with "and then" or "because".' },
-  { num:8,  name:'Short Story',    emoji:'📖', stars:10, fish:5,  desc:'3–4 sentence narratives with a beginning and end.' },
-  { num:9,  name:'Extended Chat',  emoji:'🎤', stars:11, fish:5,  desc:'Fluent multi-turn back-and-forth conversation.' },
-  { num:10, name:'Oral Master',    emoji:'🏆', stars:12, fish:6,  desc:'Full natural conversation on any topic.' },
-];
-
-const WIZARD_OPTIONS = [
-  'No words yet — just sounds or silence',
-  'A few words (1–10 words)',
-  'Several words, trying short phrases',
-  'Short phrases (3–4 words)',
-  'Short sentences (about 5–7 words)',
-  'Full sentences (8 or more words)',
-  'Short back-and-forth conversations',
-  'Longer conversations',
-  'Extended conversations — wants to do more',
-  'Full conversations — advanced practice',
-];
-
-// ── System prompts ────────────────────────────────────────────────────────────
-function buildSystemPrompt(levelNum) {
-  const base = `You are Oral, a friendly 3D animated character who helps children learn to talk in a fun playground.
-You are warm, enthusiastic, patient and gentle. You ALWAYS celebrate every attempt enthusiastically.
-NEVER correct pronunciation. NEVER express disappointment. NEVER rush the child.
-ALWAYS start your response with enthusiasm like "Wonderful!", "Amazing!", "Great job!", "Fantastic!", "Yes!" etc.
-
-SAFEGUARDING: If the child mentions being hurt, scared, or in danger, respond ONLY with: "Please find a grown-up right now! They will help you! 🤗" then gently change the topic.
-
-PERMITTED TOPICS: greetings, simple feelings, sea animals, ocean, family first names, school activities (general), friends (first names), food, colours, toys, simple activities, imagination, hobbies.
-PROHIBITED: violence, strangers, personal info (full name, address, school name, phone), scary content, adult topics.
-
-Keep responses SHORT (2-3 sentences max). Always end with ONE simple question or prompt suited to the child's level.`;
-
-  const levelInstructions = [
-    `LEVEL 1 - FIRST SOUNDS: Child may make any sound or no sound. Celebrate ANY vocalisation massively. Ask things like "Can you make any sound for me? Can you say ooh? Ooooh!" Accept any sound as a perfect answer. Use very simple words.`,
-    `LEVEL 2 - FIRST WORD: Target single words like "hi", "hello", "bye", "yes", "no". Celebrate single words hugely. Model: if child says nothing, model the word clearly. Ask "Can you say hello to me? 👋"`,
-    `LEVEL 3 - TWO WORDS: Target 2-word combinations like "blue fish", "big wave", "I like". Ask simple questions with obvious 2-word answers. E.g. "What colour is your favourite fish?"`,
-    `LEVEL 4 - SHORT PHRASE: Target 3-4 word phrases. Ask about favourites. E.g. "What is your favourite food?" Model 3-4 word answers.`,
-    `LEVEL 5 - SIMPLE SENTENCE: Target 5-7 word sentences. Ask open questions. E.g. "Tell me about your favourite animal!" Model complete sentences.`,
-    `LEVEL 6 - FULL SENTENCE: Target 8-10 word sentences with details. Ask about recent events. E.g. "Tell me about something you did today!"`,
-    `LEVEL 7 - TWO SENTENCES: Target 2 connected sentences using "and then", "because", "but". Ask about memorable events. E.g. "Tell me about your best ever day!"`,
-    `LEVEL 8 - SHORT STORY: Target 3-4 sentence narratives with beginning, middle, end. E.g. "Tell me a story about a friendly fish!"`,
-    `LEVEL 9 - EXTENDED CHAT: Encourage fluent multi-turn conversation with expanding detail. Ask open questions. E.g. "What do you love most in the whole world?"`,
-    `LEVEL 10 - ORAL MASTER: Open confident conversation on any topic. Celebrate their amazing ability. E.g. "You are incredible! What shall we talk about today?"`,
-  ];
-
-  return base + '\n\n' + levelInstructions[levelNum - 1];
-}
-
-// ── Three.js helpers ──────────────────────────────────────────────────────────
-function buildOralCharacter(THREE) {
-  const group = new THREE.Group();
-  const skin = new THREE.MeshPhongMaterial({ color: 0xFFCBA4 });
-  const skinMat = skin;
-  const blueMat = new THREE.MeshPhongMaterial({ color: 0x3355AA });
-  const darkBlueMat = new THREE.MeshPhongMaterial({ color: 0x223377 });
-  const blackMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
-  const whiteMat = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
-  const brownMat = new THREE.MeshPhongMaterial({ color: 0x5C3317 });
-  const redMat = new THREE.MeshPhongMaterial({ color: 0xCC2222 });
-  const pinkMat = new THREE.MeshPhongMaterial({ color: 0xFF9999 });
-  const darkRedMat = new THREE.MeshPhongMaterial({ color: 0x8B0000 });
-  const torusMat = new THREE.MeshPhongMaterial({ color: 0xCC2222 });
-
-  // Head group
-  const headGroup = new THREE.Group();
-  headGroup.position.set(0, 1.65, 0);
-  group.add(headGroup);
-
-  const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), skinMat);
-  headGroup.add(headMesh);
-
-  // Hair
-  const hairMesh = new THREE.Mesh(new THREE.SphereGeometry(0.29, 16, 8, 0, Math.PI*2, 0, Math.PI*0.5), brownMat);
-  hairMesh.position.y = 0.05;
-  headGroup.add(hairMesh);
-
-  // Eyes
-  function makeEye(xOff) {
-    const eyeG = new THREE.Group();
-    eyeG.position.set(xOff, 0.06, 0.24);
-    const white = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), whiteMat);
-    eyeG.add(white);
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(0.042, 10, 10), new THREE.MeshPhongMaterial({color:0x5C3317}));
-    iris.position.z = 0.03;
-    eyeG.add(iris);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), blackMat);
-    pupil.position.z = 0.055;
-    eyeG.add(pupil);
-    const shine = new THREE.Mesh(new THREE.SphereGeometry(0.01, 6, 6), new THREE.MeshPhongMaterial({color:0xFFFFFF,emissive:0xFFFFFF}));
-    shine.position.set(0.015, 0.015, 0.07);
-    eyeG.add(shine);
-    return eyeG;
-  }
-  headGroup.add(makeEye(-0.1));
-  headGroup.add(makeEye(0.1));
-
-  // Eyebrows
-  function makeEyebrow(xOff) {
-    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.016, 0.012), brownMat);
-    brow.position.set(xOff, 0.16, 0.25);
-    brow.rotation.z = xOff < 0 ? 0.15 : -0.15;
-    return brow;
-  }
-  headGroup.add(makeEyebrow(-0.1));
-  headGroup.add(makeEyebrow(0.1));
-
-  // Nose
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), skinMat);
-  nose.position.set(0, -0.02, 0.28);
-  headGroup.add(nose);
-
-  // Cheeks
-  const cheekMat = new THREE.MeshPhongMaterial({color:0xFFAABB,transparent:true,opacity:0.4});
-  [-0.17, 0.17].forEach(x => {
-    const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), cheekMat);
-    cheek.position.set(x, -0.04, 0.22);
-    headGroup.add(cheek);
-  });
-
-  // Mouth group
-  const mouthGroup = new THREE.Group();
-  mouthGroup.position.set(0, -0.1, 0.27);
-  headGroup.add(mouthGroup);
-
-  // Closed smile (torus)
-  const smileMesh = new THREE.Mesh(
-    new THREE.TorusGeometry(0.055, 0.012, 8, 16, Math.PI),
-    torusMat
-  );
-  smileMesh.rotation.z = Math.PI;
-  mouthGroup.add(smileMesh);
-
-  // Open mouth group
-  const openMouthGroup = new THREE.Group();
-  openMouthGroup.visible = false;
-  mouthGroup.add(openMouthGroup);
-
-  const cavity = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.04, 0.04, 12), darkRedMat);
-  cavity.rotation.x = Math.PI/2;
-  openMouthGroup.add(cavity);
-
-  const teeth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.016, 0.012), whiteMat);
-  teeth.position.set(0, 0.025, 0.008);
-  openMouthGroup.add(teeth);
-
-  const tongue = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), pinkMat);
-  tongue.position.set(0, -0.015, -0.01);
-  openMouthGroup.add(tongue);
-
-  const upperLip = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.016, 0.012), redMat);
-  upperLip.position.set(0, 0.038, 0.015);
-  openMouthGroup.add(upperLip);
-
-  // Neck
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.14, 10), skinMat);
-  neck.position.set(0, 1.48, 0);
-  group.add(neck);
-
-  // Torso
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.52, 0.26), blueMat);
-  torso.position.set(0, 1.13, 0);
-  group.add(torso);
-
-  // Collar
-  const collarMat = new THREE.MeshPhongMaterial({color:0xFFFFFF,transparent:true,opacity:0.6});
-  const collar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.15), collarMat);
-  collar.position.set(0, 1.36, 0.1);
-  group.add(collar);
-
-  // Waist
-  const waist = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.24), darkBlueMat);
-  waist.position.set(0, 0.84, 0);
-  group.add(waist);
-
-  // Arms
-  function makeArm(side) {
-    const armGroup = new THREE.Group();
-    armGroup.position.set(side * 0.28, 1.3, 0);
-    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.28, 10), skinMat);
-    upperArm.position.set(side * 0.055, -0.14, 0);
-    armGroup.add(upperArm);
-    const elbowGroup = new THREE.Group();
-    elbowGroup.position.set(side * 0.055, -0.28, 0);
-    const lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.26, 10), skinMat);
-    lowerArm.position.set(0, -0.13, 0);
-    elbowGroup.add(lowerArm);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), skinMat);
-    hand.position.set(0, -0.26, 0);
-    elbowGroup.add(hand);
-    armGroup.add(elbowGroup);
-    return { armGroup, elbowGroup };
-  }
-  const leftArm = makeArm(-1);
-  const rightArm = makeArm(1);
-  group.add(leftArm.armGroup);
-  group.add(rightArm.armGroup);
-
-  // Legs
-  function makeLeg(side) {
-    const legGroup = new THREE.Group();
-    legGroup.position.set(side * 0.13, 0.75, 0);
-    const upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.065, 0.38, 10), darkBlueMat);
-    upperLeg.position.set(0, -0.19, 0);
-    legGroup.add(upperLeg);
-    const kneeGroup = new THREE.Group();
-    kneeGroup.position.set(0, -0.38, 0);
-    const lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.36, 10), darkBlueMat);
-    lowerLeg.position.set(0, -0.18, 0);
-    kneeGroup.add(lowerLeg);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.07, 0.2), blackMat);
-    foot.position.set(0, -0.38, 0.04);
-    kneeGroup.add(foot);
-    legGroup.add(kneeGroup);
-    return { legGroup, kneeGroup };
-  }
-  const leftLeg = makeLeg(-1);
-  const rightLeg = makeLeg(1);
-  group.add(leftLeg.legGroup);
-  group.add(rightLeg.legGroup);
-
-  return {
-    root: group,
-    headGroup,
-    leftArm, rightArm,
-    leftLeg, rightLeg,
-    smileMesh, openMouthGroup,
-  };
-}
-
-function buildPlayground(THREE, scene) {
-  const cloudsList = [];
-  let mgrDisk = null;
-
-  // Ground
-  const groundMat = new THREE.MeshLambertMaterial({ color: 0x4CAF50 });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = 0;
-  scene.add(ground);
-
-  // Colour patches
-  const patchColors = [0x43A047, 0x66BB6A, 0x388E3C];
-  for (let i = 0; i < 12; i++) {
-    const patch = new THREE.Mesh(
-      new THREE.CircleGeometry(0.8 + Math.random() * 1.5, 12),
-      new THREE.MeshLambertMaterial({ color: patchColors[i % 3] })
-    );
-    patch.rotation.x = -Math.PI / 2;
-    patch.position.set((Math.random() - 0.5) * 20, 0.01, (Math.random() - 0.5) * 20);
-    scene.add(patch);
-  }
-
-  // Fence
-  const fencePostMat = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
-  const fenceRailMat = new THREE.MeshPhongMaterial({ color: 0xEEEEEE });
-  function addFenceSection(x, z, rotY, length) {
-    const railGeo = new THREE.BoxGeometry(length, 0.05, 0.04);
-    const r1 = new THREE.Mesh(railGeo, fenceRailMat);
-    r1.position.set(x, 0.55, z);
-    r1.rotation.y = rotY;
-    scene.add(r1);
-    const r2 = new THREE.Mesh(railGeo, fenceRailMat);
-    r2.position.set(x, 0.85, z);
-    r2.rotation.y = rotY;
-    scene.add(r2);
-    const numPosts = Math.ceil(length / 1.5) + 1;
-    for (let i = 0; i <= numPosts; i++) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.1, 0.06), fencePostMat);
-      const offset = (i / numPosts - 0.5) * length;
-      const dx = Math.cos(rotY) * offset;
-      const dz = Math.sin(rotY) * offset;
-      post.position.set(x + dx, 0.55, z + dz);
-      scene.add(post);
+/* ---------------- Canvas underwater background ---------------- */
+(function() {
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, bubbles = [], particles = [], fish = [], t = 0;
+  function reduced() { try { return JSON.parse(localStorage.getItem('oceanVoices')||'{}').sensoryMode; } catch(e){ return false; } }
+  function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+  resize(); addEventListener('resize', resize);
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  for (let i=0;i<28;i++) bubbles.push({ x: rnd(0,W), y: rnd(0,H), r: rnd(5,15), sp: rnd(.3,1.1), drift: rnd(-.3,.3) });
+  for (let i=0;i<40;i++) particles.push({ x: rnd(0,W), y: rnd(0,H), r: rnd(.5,2), ph: rnd(0,6.28), sp: rnd(.002,.01) });
+  const fishEmo = ['🐟','🐠','🐡'];
+  for (let i=0;i<4;i++) fish.push({ x: rnd(0,W), y: rnd(60,H-120), sp: rnd(.2,.6)*(Math.random()<.5?-1:1), e: fishEmo[i%3], s: rnd(20,38) });
+  function loop() {
+    t++;
+    const r = reduced();
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#0a1628'); g.addColorStop(.5,'#0d4f7c'); g.addColorStop(1,'#063a5a');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    ctx.save();
+    const rayCount = r ? 2 : 4;
+    for (let i=0;i<rayCount;i++) {
+      const x = (W/rayCount)*i + Math.sin(t*0.005 + i)*40;
+      const grd = ctx.createLinearGradient(x, 0, x+120, H);
+      grd.addColorStop(0,'rgba(127,215,232,0.10)'); grd.addColorStop(1,'rgba(127,215,232,0)');
+      ctx.fillStyle = grd; ctx.beginPath();
+      ctx.moveTo(x,0); ctx.lineTo(x+80,0); ctx.lineTo(x+200,H); ctx.lineTo(x+40,H); ctx.closePath(); ctx.fill();
     }
-  }
-  addFenceSection(0, -16, 0, 32);
-  addFenceSection(0, 16, 0, 32);
-  addFenceSection(-16, 0, Math.PI/2, 32);
-  addFenceSection(16, 0, Math.PI/2, 32);
-
-  // Trees
-  const trunkMat = new THREE.MeshPhongMaterial({ color: 0x8B5E3C });
-  const canopyColors = [0x2E7D32, 0x388E3C, 0x43A047, 0x1B5E20];
-  const treePositions = [[-8,-8],[-10,5],[7,-9],[9,4],[-5,-13],[6,-13],[-12,-3],[11,-3]];
-  treePositions.forEach(([tx, tz], i) => {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 1.2, 8), trunkMat);
-    trunk.position.set(tx, 0.6, tz);
-    scene.add(trunk);
-    for (let l = 0; l < 3; l++) {
-      const layer = new THREE.Mesh(
-        new THREE.SphereGeometry(0.9 - l * 0.18, 10, 8),
-        new THREE.MeshPhongMaterial({ color: canopyColors[(i + l) % 4] })
-      );
-      layer.position.set(tx, 1.6 + l * 0.45, tz);
-      scene.add(layer);
-    }
-  });
-
-  // Flowers
-  const flowerColors = [0xFF5252, 0xFF4081, 0xFFD740, 0x69F0AE, 0x40C4FF, 0xEA80FC];
-  for (let i = 0; i < 40; i++) {
-    const fx = (Math.random() - 0.5) * 28;
-    const fz = (Math.random() - 0.5) * 28;
-    const stemMat = new THREE.MeshPhongMaterial({ color: 0x4CAF50 });
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.25, 6), stemMat);
-    stem.position.set(fx, 0.125, fz);
-    scene.add(stem);
-    const flower = new THREE.Mesh(
-      new THREE.SphereGeometry(0.055, 8, 8),
-      new THREE.MeshPhongMaterial({ color: flowerColors[i % 6] })
-    );
-    flower.position.set(fx, 0.27, fz);
-    scene.add(flower);
-  }
-
-  // Slide
-  const slideMat = new THREE.MeshPhongMaterial({ color: 0xFF5252 });
-  const slideYellowMat = new THREE.MeshPhongMaterial({ color: 0xFDD835 });
-  const slideFrame = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.0, 0.1), slideMat);
-  slideFrame.position.set(-12, 1.0, -4);
-  scene.add(slideFrame);
-  const slideFrame2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.0, 0.1), slideMat);
-  slideFrame2.position.set(-12, 1.0, -3);
-  scene.add(slideFrame2);
-  const slideSurface = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.06, 2.0), slideYellowMat);
-  slideSurface.position.set(-12, 1.1, -3.5);
-  slideSurface.rotation.x = -0.5;
-  scene.add(slideSurface);
-
-  // Swing set
-  const swingMat = new THREE.MeshPhongMaterial({ color: 0x888888 });
-  const swingSeatMat = new THREE.MeshPhongMaterial({ color: 0xFF80AB });
-  const swingTop = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.1, 0.1), swingMat);
-  swingTop.position.set(-12, 2.3, 3);
-  scene.add(swingTop);
-  const swingL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8), swingMat);
-  swingL.position.set(-13.4, 1.1, 3);
-  swingL.rotation.z = 0.2;
-  scene.add(swingL);
-  const swingR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8), swingMat);
-  swingR.position.set(-10.6, 1.1, 3);
-  swingR.rotation.z = -0.2;
-  scene.add(swingR);
-  [-12.6, -11].forEach(sx => {
-    const chain = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.2, 0.04), swingMat);
-    chain.position.set(sx, 1.9, 3);
-    scene.add(chain);
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.3), swingSeatMat);
-    seat.position.set(sx, 1.3, 3);
-    scene.add(seat);
-  });
-
-  // Merry-go-round
-  const mgrBase = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.6, 8), new THREE.MeshPhongMaterial({color:0x888888}));
-  mgrBase.position.set(12, 0.3, -5);
-  scene.add(mgrBase);
-  mgrDisk = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.12, 18), new THREE.MeshPhongMaterial({color:0xFF6F00}));
-  mgrDisk.position.set(12, 0.65, -5);
-  scene.add(mgrDisk);
-  for (let s = 0; s < 6; s++) {
-    const angle = (s / 6) * Math.PI * 2;
-    const spoke = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.07, 0.07), new THREE.MeshPhongMaterial({color:0xE65100}));
-    spoke.position.set(12, 0.72, -5);
-    spoke.rotation.y = angle;
-    scene.add(spoke);
-  }
-
-  // Sandbox
-  const sandboxMat = new THREE.MeshPhongMaterial({ color: 0x8B6914 });
-  const sandMat = new THREE.MeshLambertMaterial({ color: 0xF5DEB3 });
-  const sbFrame = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.2, 2.2), sandboxMat);
-  sbFrame.position.set(12, 0.1, 4);
-  scene.add(sbFrame);
-  const sandFill = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.15, 1.9), sandMat);
-  sandFill.position.set(12, 0.17, 4);
-  scene.add(sandFill);
-
-  // Clouds
-  const cloudMat = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
-  const cloudPositions = [[-8,8,-10],[5,9,-12],[12,7.5,-8],[-3,8.5,-14],[0,9,-6],[8,8,-4],[-14,7,-7],[14,9,-11]];
-  cloudPositions.forEach(([cx, cy, cz]) => {
-    const cloudG = new THREE.Group();
-    cloudG.position.set(cx, cy, cz);
-    for (let c = 0; c < 5; c++) {
-      const blob = new THREE.Mesh(new THREE.SphereGeometry(0.55 + Math.random() * 0.35, 8, 8), cloudMat);
-      blob.position.set((c - 2) * 0.55, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.3);
-      cloudG.add(blob);
-    }
-    scene.add(cloudG);
-    cloudsList.push(cloudG);
-  });
-
-  return { clouds: cloudsList, mgrDisk };
-}
-
-// ── Setup Talk Scene ──────────────────────────────────────────────────────────
-function setupTalkScene(canvas, stateRef) {
-  const THREE = window.THREE;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  renderer.setClearColor(0x87CEEB);
-
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x87CEEB, 18, 35);
-
-  const camera = new THREE.PerspectiveCamera(52, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-  camera.position.set(0, 2.4, 7.2);
-  camera.lookAt(0, 1.1, 0);
-
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.65);
-  scene.add(ambientLight);
-  const sunLight = new THREE.DirectionalLight(0xFFE8C8, 0.9);
-  sunLight.position.set(6, 12, 8);
-  scene.add(sunLight);
-  const fillLight = new THREE.DirectionalLight(0xC8DDFF, 0.4);
-  fillLight.position.set(-5, 4, -3);
-  scene.add(fillLight);
-
-  const character = buildOralCharacter(THREE);
-  scene.add(character.root);
-  character.root.position.set(3, 0, 1);
-  character.root.rotation.y = -0.5;
-
-  const { clouds, mgrDisk } = buildPlayground(THREE, scene);
-
-  // Speech bubble sprite
-  const bubbleCanvas = document.createElement('canvas');
-  bubbleCanvas.width = 512; bubbleCanvas.height = 220;
-  const bubbleTex = new THREE.CanvasTexture(bubbleCanvas);
-  const bubbleSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: bubbleTex, transparent: true }));
-  bubbleSprite.scale.set(3.0, 1.3, 1);
-  bubbleSprite.position.set(0, 2.5, 0);
-  bubbleSprite.visible = false;
-  character.root.add(bubbleSprite);
-
-  function drawBubble(text) {
-    const ctx = bubbleCanvas.getContext('2d');
-    ctx.clearRect(0, 0, 512, 220);
-    ctx.fillStyle = '#FFFFFF';
-    const r = 30;
-    ctx.beginPath();
-    ctx.moveTo(r, 10); ctx.lineTo(512-r, 10);
-    ctx.arcTo(512-10, 10, 512-10, 220-r, r);
-    ctx.lineTo(512-10, 220-r);
-    ctx.arcTo(512-10, 210, 512-10-r, 210, r);
-    ctx.lineTo(280, 210); ctx.lineTo(256, 220); ctx.lineTo(230, 210);
-    ctx.lineTo(r, 210);
-    ctx.arcTo(10, 210, 10, 210-r, r);
-    ctx.lineTo(10, r);
-    ctx.arcTo(10, 10, r, 10, r);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#3355AA';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.fillStyle = '#1a1a2e';
-    ctx.font = 'bold 26px Arial';
-    ctx.textAlign = 'center';
-    const words = text.split(' ');
-    const lines = [];
-    let line = '';
-    for (const w of words) {
-      const test = line ? line + ' ' + w : w;
-      if (ctx.measureText(test).width > 460) { lines.push(line); line = w; }
-      else line = test;
-    }
-    if (line) lines.push(line);
-    const lineH = 36;
-    const startY = 110 - ((lines.length - 1) * lineH) / 2;
-    lines.forEach((l, i) => ctx.fillText(l, 256, startY + i * lineH));
-    bubbleTex.needsUpdate = true;
-  }
-
-  // Walk path
-  let walkAngle = 0;
-  let approachActive = false;
-  let walkActive = true;
-  let mouthInterval = null;
-  let lastTime = performance.now();
-
-  function setMouthOpen(open) {
-    character.smileMesh.visible = !open;
-    character.openMouthGroup.visible = open;
-  }
-
-  function startTalking(text) {
-    approachActive = true;
-    walkActive = false;
-    if (text) {
-      drawBubble(text);
-      bubbleSprite.visible = true;
-    }
-    if (mouthInterval) clearInterval(mouthInterval);
-    let mouthOpen = false;
-    mouthInterval = setInterval(() => {
-      mouthOpen = !mouthOpen;
-      setMouthOpen(mouthOpen);
-    }, 140);
-  }
-
-  function stopTalking() {
-    if (mouthInterval) { clearInterval(mouthInterval); mouthInterval = null; }
-    setMouthOpen(false);
-    bubbleSprite.visible = false;
-    setTimeout(() => { walkActive = true; approachActive = false; }, 2000);
-  }
-
-  let rafId;
-  function animate() {
-    rafId = requestAnimationFrame(animate);
-    const now = performance.now();
-    const dt = Math.min((now - lastTime) / 1000, 0.05);
-    lastTime = now;
-    const t = now * 0.001;
-
-    const state = stateRef.current;
-
-    if (state.speaking) {
-      startTalking._armed = true;
-      if (!mouthInterval) {
-        let mO = false;
-        mouthInterval = setInterval(() => { mO = !mO; setMouthOpen(mO); }, 140);
-      }
-      if (state.lastText && state.lastText !== startTalking._lastDrawn) {
-        startTalking._lastDrawn = state.lastText;
-        drawBubble(state.lastText);
-        bubbleSprite.visible = true;
-      }
-      approachActive = true;
-      walkActive = false;
-    } else {
-      if (startTalking._armed) {
-        startTalking._armed = false;
-        if (mouthInterval) { clearInterval(mouthInterval); mouthInterval = null; }
-        setMouthOpen(false);
-        bubbleSprite.visible = false;
-        setTimeout(() => { walkActive = true; approachActive = false; }, 3000);
-      }
-    }
-
-    if (state.listening) {
-      character.headGroup.rotation.x = Math.lerp ? Math.lerp(character.headGroup.rotation.x, -0.1, 0.05) : character.headGroup.rotation.x * 0.95 + (-0.1) * 0.05;
-    } else {
-      character.headGroup.rotation.x = character.headGroup.rotation.x * 0.95;
-    }
-
-    if (state.celebrating) {
-      const bounce = Math.abs(Math.sin(t * 6));
-      character.root.position.y = bounce * 0.3;
-      character.leftArm.armGroup.rotation.z = -2.0;
-      character.rightArm.armGroup.rotation.z = 2.0;
-    } else {
-      character.root.position.y = 0;
-      if (walkActive) {
-        walkAngle += dt * 0.4;
-        const radius = 3.5;
-        const tx = Math.cos(walkAngle) * radius;
-        const tz = Math.sin(walkAngle) * radius;
-        const dx = tx - character.root.position.x;
-        const dz = tz - character.root.position.z;
-        character.root.position.x += dx * dt * 1.5;
-        character.root.position.z += dz * dt * 1.5;
-        const targetAngle = Math.atan2(dx, dz);
-        const dRot = targetAngle - character.root.rotation.y;
-        character.root.rotation.y += Math.max(-0.08, Math.min(0.08, dRot));
-
-        const walk = Math.sin(t * 3);
-        character.leftLeg.legGroup.rotation.x = walk * 0.55;
-        character.rightLeg.legGroup.rotation.x = -walk * 0.55;
-        character.leftArm.armGroup.rotation.x = -walk * 0.4;
-        character.rightArm.armGroup.rotation.x = walk * 0.4;
-        character.leftLeg.kneeGroup.rotation.x = Math.max(0, Math.sin(t * 3) * 0.3);
-        character.rightLeg.kneeGroup.rotation.x = Math.max(0, -Math.sin(t * 3) * 0.3);
-        character.leftArm.armGroup.rotation.z = 0.1;
-        character.rightArm.armGroup.rotation.z = -0.1;
-
-        // Idle wave
-        if (Math.sin(t * 0.3) > 0.9) {
-          character.rightArm.armGroup.rotation.x = -1.5;
-          character.rightArm.armGroup.rotation.z = 0.4;
-        }
-      } else if (approachActive) {
-        const dy = character.root.rotation.y;
-        character.root.rotation.y += (0 - dy) * 0.06;
-        const pdx = 0 - character.root.position.x;
-        const pdz = 1.5 - character.root.position.z;
-        character.root.position.x += pdx * dt * 1.8;
-        character.root.position.z += pdz * dt * 1.8;
-        // Talking gestures
-        character.leftArm.armGroup.rotation.x = Math.sin(t * 2) * 0.4 - 0.3;
-        character.rightArm.armGroup.rotation.x = Math.sin(t * 2 + 1) * 0.4 - 0.3;
-        character.leftArm.armGroup.rotation.z = 0.3;
-        character.rightArm.armGroup.rotation.z = -0.3;
-        character.leftLeg.legGroup.rotation.x = 0;
-        character.rightLeg.legGroup.rotation.x = 0;
-      }
-
-      // Body idle sway when standing still
-      if (!walkActive && !approachActive) {
-        character.root.rotation.z = Math.sin(t * 0.8) * 0.02;
-      }
-    }
-
-    // Clouds drift
-    clouds.forEach(c => {
-      c.position.x += dt * 0.5;
-      if (c.position.x > 20) c.position.x = -20;
+    ctx.restore();
+    if (!r) particles.forEach(p => {
+      p.ph += p.sp; const a = (Math.sin(p.ph)+1)/2;
+      ctx.fillStyle = `rgba(127,215,232,${0.1+a*0.5})`;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.28); ctx.fill();
     });
-
-    // MGR spin
-    if (mgrDisk) mgrDisk.rotation.y += dt * 0.5;
-
-    renderer.render(scene, camera);
-  }
-
-  animate();
-
-  const resize = () => {
-    camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  };
-  window.addEventListener('resize', resize);
-
-  return () => {
-    cancelAnimationFrame(rafId);
-    window.removeEventListener('resize', resize);
-    if (mouthInterval) clearInterval(mouthInterval);
-    renderer.dispose();
-    renderer.forceContextLoss();
-  };
-}
-
-// ── Setup Fish Scene ──────────────────────────────────────────────────────────
-function setupFishScene(canvas, { fishCount, onComplete }) {
-  const THREE = window.THREE;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  renderer.setClearColor(0x010820);
-
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x010820, 10, 28);
-
-  const camera = new THREE.PerspectiveCamera(52, canvas.clientWidth / canvas.clientHeight, 0.1, 50);
-  camera.position.set(0, 3.5, 9);
-  camera.lookAt(0, 1.2, 0);
-
-  const ambient = new THREE.AmbientLight(0x204060, 1.0);
-  scene.add(ambient);
-  const spot1 = new THREE.SpotLight(0xB0DFFF, 1.2);
-  spot1.position.set(-3, 6, 2);
-  spot1.target.position.set(-3, 1, 0);
-  scene.add(spot1); scene.add(spot1.target);
-  const spot2 = new THREE.SpotLight(0xB0DFFF, 1.2);
-  spot2.position.set(3, 6, 2);
-  spot2.target.position.set(3, 1, 0);
-  scene.add(spot2); scene.add(spot2.target);
-  const fill = new THREE.PointLight(0x4080C0, 0.5);
-  fill.position.set(0, 3, 5);
-  scene.add(fill);
-
-  // Table
-  const tableMat = new THREE.MeshPhongMaterial({ color: 0x5C3317 });
-  const tableTop = new THREE.Mesh(new THREE.BoxGeometry(9.5, 0.18, 3.0), tableMat);
-  tableTop.position.set(0, 0.3, 0);
-  scene.add(tableTop);
-  [[-4.2,-1],[-4.2,1],[4.2,-1],[4.2,1]].forEach(([tx,tz]) => {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.4, 8), tableMat);
-    leg.position.set(tx, 0.1, tz);
-    scene.add(leg);
-  });
-
-  function buildTank(centerX) {
-    const tankG = new THREE.Group();
-    tankG.position.set(centerX, 0.4, 0);
-
-    const glassMat = new THREE.MeshPhongMaterial({color:0x88BBFF,transparent:true,opacity:0.22,side:THREE.DoubleSide});
-    const frameMat = new THREE.MeshPhongMaterial({color:0x4488FF,emissive:0x112244});
-    const sandMat = new THREE.MeshLambertMaterial({color:0xD2B48C});
-    const waterMat = new THREE.MeshPhongMaterial({color:0x1565C0,transparent:true,opacity:0.28});
-    const seaweedMat = new THREE.MeshLambertMaterial({color:0x2E7D32});
-
-    const W = 2.8, H = 2.0, D = 1.8;
-
-    // Glass walls
-    const planes = [
-      {w:W,h:H,pos:[0,H/2,D/2],rot:[0,0,0]},
-      {w:W,h:H,pos:[0,H/2,-D/2],rot:[0,0,0]},
-      {w:D,h:H,pos:[-W/2,H/2,0],rot:[0,Math.PI/2,0]},
-      {w:D,h:H,pos:[W/2,H/2,0],rot:[0,Math.PI/2,0]},
-    ];
-    planes.forEach(p => {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.h), glassMat);
-      m.position.set(...p.pos);
-      m.rotation.set(...p.rot);
-      tankG.add(m);
+    fish.forEach(f => {
+      f.x += f.sp * (r?0.4:1);
+      if (f.x>W+40) f.x=-40; if (f.x<-40) f.x=W+40;
+      ctx.save(); ctx.globalAlpha=.5; ctx.font = f.s+'px serif';
+      if (f.sp<0){ ctx.translate(f.x,f.y); ctx.scale(-1,1); ctx.fillText(f.e,0,0);} else ctx.fillText(f.e,f.x,f.y);
+      ctx.restore();
     });
-
-    // Frame edges
-    const edgeGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
-    const corners = [[-W/2,0,-D/2],[-W/2,0,D/2],[W/2,0,-D/2],[W/2,0,D/2],
-                     [-W/2,H,-D/2],[-W/2,H,D/2],[W/2,H,-D/2],[W/2,H,D/2]];
-    corners.forEach(c => {
-      const e = new THREE.Mesh(edgeGeo, frameMat);
-      e.position.set(...c);
-      tankG.add(e);
-    });
-    // Top and bottom rails
-    const topBot = new THREE.BoxGeometry(W, 0.05, 0.05);
-    [[0,0,-D/2],[0,0,D/2],[0,H,-D/2],[0,H,D/2]].forEach(pos => {
-      const r = new THREE.Mesh(topBot, frameMat);
-      r.position.set(...pos);
-      tankG.add(r);
-    });
-    const sides = new THREE.BoxGeometry(0.05, H, 0.05);
-    [[-W/2,H/2,-D/2],[-W/2,H/2,D/2],[W/2,H/2,-D/2],[W/2,H/2,D/2]].forEach(pos => {
-      const r = new THREE.Mesh(sides, frameMat);
-      r.position.set(...pos);
-      tankG.add(r);
-    });
-
-    // Sand
-    const sand = new THREE.Mesh(new THREE.BoxGeometry(W-0.1, 0.12, D-0.1), sandMat);
-    sand.position.set(0, 0.06, 0);
-    tankG.add(sand);
-
-    // Water
-    const water = new THREE.Mesh(new THREE.BoxGeometry(W-0.08, H-0.2, D-0.08), waterMat);
-    water.position.set(0, (H-0.2)/2 + 0.1, 0);
-    tankG.add(water);
-
-    // Seaweed
-    for (let s = 0; s < 4; s++) {
-      const sh = 0.5 + Math.random() * 0.9;
-      const sw = new THREE.Mesh(new THREE.BoxGeometry(0.06, sh, 0.06), seaweedMat);
-      sw.position.set((Math.random()-0.5)*(W-0.5), sh/2 + 0.12, (Math.random()-0.5)*(D-0.4));
-      tankG.add(sw);
-    }
-
-    scene.add(tankG);
-    return tankG;
-  }
-
-  const leftTank = buildTank(-3.0);
-  const rightTank = buildTank(3.0);
-
-  function buildFish(color) {
-    const fishG = new THREE.Group();
-    const mat = new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.05 });
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), mat);
-    body.scale.set(1.75, 1, 1);
-    fishG.add(body);
-
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.22, 4), mat);
-    tail.position.set(-0.35, 0, 0);
-    tail.rotation.z = Math.PI / 2;
-    fishG.add(tail);
-
-    const tailFin = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.16, 4), mat);
-    tailFin.position.set(-0.38, 0.08, 0);
-    tailFin.rotation.z = Math.PI / 2 + 0.4;
-    fishG.add(tailFin);
-
-    const dorsalFin = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.15, 4), mat);
-    dorsalFin.position.set(0, 0.18, 0);
-    fishG.add(dorsalFin);
-
-    const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), new THREE.MeshPhongMaterial({color:0xFFFFFF}));
-    eyeWhite.position.set(0.26, 0.05, 0.1);
-    fishG.add(eyeWhite);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), new THREE.MeshPhongMaterial({color:0x111111}));
-    pupil.position.set(0.29, 0.05, 0.12);
-    fishG.add(pupil);
-
-    const pectoral = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 4), new THREE.MeshPhongMaterial({color,transparent:true,opacity:0.7}));
-    pectoral.position.set(0.1, -0.1, 0.15);
-    pectoral.rotation.z = -0.5;
-    fishG.add(pectoral);
-
-    fishG._mat = mat;
-    return fishG;
-  }
-
-  const FISH_COLORS = [0xFF6B35, 0x00BCD4, 0xFFD740, 0xFF80AB, 0x40C4FF, 0x69F0AE];
-  const fishList = [];
-  const fishPhases = [];
-  const fishInRight = [];
-  const fishFlying = [];
-
-  for (let i = 0; i < fishCount; i++) {
-    const fish = buildFish(FISH_COLORS[i % FISH_COLORS.length]);
-    fish.position.set(-3 + (Math.random()-0.5)*2.2, 0.7 + Math.random()*1.2, (Math.random()-0.5)*1.2);
-    scene.add(fish);
-    fishList.push(fish);
-    fishPhases.push(Math.random() * Math.PI * 2);
-    fishInRight.push(false);
-    fishFlying.push(false);
-  }
-
-  // Bubbles
-  const bubbles = [];
-  const bubbleMat = new THREE.MeshPhongMaterial({color:0xAADDFF,transparent:true,opacity:0.4});
-  for (let i = 0; i < 24; i++) {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.03 + Math.random()*0.04, 6, 6), bubbleMat);
-    const inRight = i >= 12;
-    const bx = inRight ? 3 : -3;
-    b.position.set(bx + (Math.random()-0.5)*2.4, Math.random()*1.8+0.2, (Math.random()-0.5)*1.4);
-    b._rise = 0.4 + Math.random() * 0.6;
-    b._drift = (Math.random()-0.5)*0.15;
-    b._tank = inRight ? 3 : -3;
-    b._maxY = 2.1;
-    scene.add(b);
-    bubbles.push(b);
-  }
-
-  let movedCount = 0;
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-
-  function flyFish(idx) {
-    if (fishFlying[idx] || fishInRight[idx]) return;
-    fishFlying[idx] = true;
-    const fish = fishList[idx];
-    fish._mat.emissiveIntensity = 0.35;
-
-    const startX = fish.position.x;
-    const startY = fish.position.y;
-    const startZ = fish.position.z;
-    const endX = 3 + (Math.random()-0.5)*1.8;
-    const endY = 0.7 + Math.random()*0.9;
-    const endZ = (Math.random()-0.5)*1.2;
-    const dur = 1.35;
-    let elapsed = 0;
-    const fly = setInterval(() => {
-      elapsed += 1/60;
-      const t = Math.min(elapsed / dur, 1);
-      fish.position.x = startX + (endX - startX) * t;
-      fish.position.y = startY + Math.sin(t * Math.PI) * 4.5 + (endY - startY) * t;
-      fish.position.z = startZ + (endZ - startZ) * t;
-      fish.rotation.z = Math.sin(t * Math.PI) * 0.4;
-      fish.rotation.y = endX > startX ? 0 : Math.PI;
-      if (t >= 1) {
-        clearInterval(fly);
-        fishFlying[idx] = false;
-        fishInRight[idx] = true;
-        fish._mat.emissiveIntensity = 0.08;
-        fish.rotation.z = 0;
-        movedCount++;
-        if (onComplete) onComplete(movedCount);
-      }
-    }, 1000/60);
-  }
-
-  function onClick(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(fishList, true);
-    if (hits.length > 0) {
-      let obj = hits[0].object;
-      while (obj.parent && !fishList.includes(obj)) obj = obj.parent;
-      const idx = fishList.indexOf(obj);
-      if (idx >= 0 && !fishInRight[idx]) flyFish(idx);
-    }
-  }
-
-  function onMouseMove(e) {
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(fishList, true);
-    const hitFish = new Set();
-    if (hits.length > 0) {
-      let obj = hits[0].object;
-      while (obj.parent && !fishList.includes(obj)) obj = obj.parent;
-      const idx = fishList.indexOf(obj);
-      if (idx >= 0 && !fishInRight[idx]) { hitFish.add(idx); canvas.style.cursor = 'pointer'; }
-      else canvas.style.cursor = 'default';
-    } else canvas.style.cursor = 'default';
-    fishList.forEach((f, i) => {
-      const target = hitFish.has(i) ? 0.25 : (fishInRight[i] ? 0.08 : 0.05);
-      f._mat.emissiveIntensity += (target - f._mat.emissiveIntensity) * 0.12;
-    });
-  }
-
-  canvas.addEventListener('click', onClick);
-  canvas.addEventListener('touchstart', onClick);
-  canvas.addEventListener('mousemove', onMouseMove);
-
-  let rafId;
-  let lastTime = performance.now();
-
-  function animate() {
-    rafId = requestAnimationFrame(animate);
-    const now = performance.now();
-    const dt = Math.min((now - lastTime) / 1000, 0.05);
-    lastTime = now;
-    const t = now * 0.001;
-
-    fishList.forEach((fish, i) => {
-      if (!fishFlying[i]) {
-        if (!fishInRight[i]) {
-          const phase = fishPhases[i];
-          fish.position.x = -3 + Math.sin(t * 0.55 + phase) * 1.05;
-          fish.position.y = 0.7 + Math.sin(t * 0.75 + phase * 1.3) * 0.62;
-          fish.position.z = Math.cos(t * 0.45 + phase * 0.8) * 0.5;
-          fish.rotation.y = Math.sin(t * 0.55 + phase) > 0 ? 0 : Math.PI;
-        } else {
-          const phase = fishPhases[i] + 3;
-          fish.position.x = 3 + Math.sin(t * 0.5 + phase) * 0.9;
-          fish.position.y = 0.7 + Math.sin(t * 0.7 + phase * 1.2) * 0.5;
-          fish.position.z = Math.cos(t * 0.4 + phase * 0.9) * 0.5;
-          fish.rotation.y = Math.sin(t * 0.5 + phase) > 0 ? 0 : Math.PI;
-        }
-        fish.children[1].rotation.y = Math.sin(t * 8 + fishPhases[i]) * 0.28;
-      }
-    });
-
     bubbles.forEach(b => {
-      b.position.y += b._rise * dt;
-      b.position.x += b._drift * dt;
-      if (b.position.y > b._maxY) {
-        b.position.y = 0.15;
-        b.position.x = b._tank + (Math.random()-0.5)*2.2;
-      }
+      b.y -= b.sp*(r?0.4:1); b.x += Math.sin(t*0.02+b.y*0.01)*b.drift;
+      if (b.y < -20){ b.y = H+20; b.x = rnd(0,W); }
+      ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.28); ctx.stroke();
+      ctx.fillStyle='rgba(127,215,232,0.08)'; ctx.fill();
     });
-
-    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
   }
-  animate();
+  loop();
+})();
 
-  const resize = () => {
-    camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  };
-  window.addEventListener('resize', resize);
+/* ---------------- State / persistence ---------------- */
+const DEFAULT = {
+  childName: "Friend", childAge: 4, ageBand: 1, communicationLevel: 2,
+  interests: [], sensoryMode: false, pecsMode: false,
+  companionName: "Shelly", companionType: "turtle", personality: "playful",
+  stage: 1, wordsAttempted: [], wordsMastered: [],
+  aquarium: [
+    { type: "turtle", emoji: "🐢", name: "Shelly the Turtle", date: "Starter" },
+    { type: "clownfish", emoji: "🐠", name: "Finn the Clownfish", date: "Starter" },
+    { type: "seahorse", emoji: "🦄", name: "Coral the Seahorse", date: "Starter" }
+  ],
+  totalAttempts: 0, totalSessions: 0, sessionHistory: [], sessionLimit: 20, setupDone: false
+};
+function loadState() {
+  try { const s = JSON.parse(localStorage.getItem('oceanVoices')); return s ? { ...DEFAULT, ...s } : { ...DEFAULT }; }
+  catch(e) { return { ...DEFAULT }; }
+}
+function saveState(s) { localStorage.setItem('oceanVoices', JSON.stringify(s)); }
 
-  return () => {
-    cancelAnimationFrame(rafId);
-    canvas.removeEventListener('click', onClick);
-    canvas.removeEventListener('touchstart', onClick);
-    canvas.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('resize', resize);
-    renderer.dispose();
-    renderer.forceContextLoss();
-  };
+const COMPANION_EMOJI = { turtle:"🐢", dolphin:"🐬", octopus:"🐙", whale:"🐋" };
+const INTERESTS = [
+  {id:"turtles",label:"Sea turtles 🐢"},{id:"dolphins",label:"Dolphins 🐬"},
+  {id:"octopuses",label:"Octopuses 🐙"},{id:"sharks",label:"Sharks 🦈"},
+  {id:"seahorses",label:"Seahorses 🦄"},{id:"treasure",label:"Treasure 💎"},
+  {id:"colours",label:"Colours 🌈"},{id:"counting",label:"Counting 🔢"}
+];
+const COMM_LEVELS = [
+  "Uses single sounds/gestures only","Uses single words","Uses 2-3 word phrases",
+  "Uses short sentences","Has conversational language"
+];
+const STAGE_NAMES = ["", "Single Words", "Two-Word Phrases", "Short Sentences", "Conversations", "Fluent Chatter"];
+
+/* ---------------- Speech recognition hook ---------------- */
+function useSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recRef = useRef(null);
+  const available = !!SR;
+  const listen = useCallback((onResult, onEnd) => {
+    if (!SR) { onEnd && onEnd(null); return; }
+    try {
+      const r = new SR(); recRef.current = r;
+      r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3;
+      let got = null;
+      r.onresult = e => { got = e.results[0][0].transcript.toLowerCase().trim(); onResult(got); };
+      r.onend = () => onEnd && onEnd(got);
+      r.onerror = () => {};
+      r.start();
+    } catch(e) { onEnd && onEnd(null); }
+  }, [SR]);
+  const stop = useCallback(() => { try { recRef.current && recRef.current.stop(); } catch(e){} }, []);
+  return { available, listen, stop };
 }
 
-// ── Confetti ──────────────────────────────────────────────────────────────────
-function Confetti() {
-  const pieces = Array.from({length:60}, (_,i) => ({
-    id:i,
-    x: Math.random()*100,
-    color: ['#ffd200','#ff6b35','#f093fb','#667eea','#38ef7d','#ff4081'][i%6],
-    delay: Math.random()*2,
-    duration: 2 + Math.random()*2,
-    rotate: Math.random()*360,
-  }));
+/* ---------------- Helpers ---------------- */
+function ageBandFor(age){ return age<=5?1:age<=7?2:3; }
+function ageBandName(b){ return b===1?"Early Learners":b===2?"Developing Communicators":"Growing Communicators"; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function levenshtein(a,b){
+  const m=[...Array(a.length+1)].map((_,i)=>[i,...Array(b.length).fill(0)]);
+  for(let j=0;j<=b.length;j++)m[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)
+    m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return m[a.length][b.length];
+}
+function matchTier(said, target) {
+  if (!said) return "silence";
+  const t = target.toLowerCase();
+  if (said === t || said.split(/\s+/).includes(t)) return "exact";
+  if (said.includes(t) || t.includes(said) || levenshtein(said, t) <= 2) return "close";
+  return "any";
+}
+
+/* ---------------- Celebration overlay ---------------- */
+function Celebration({ text }) {
+  const items = ["⭐","🫧","💙","🌟","✨","🐠","💎","🌊"];
   return (
-    <div className="confetti-wrap">
-      {pieces.map(p => (
-        <div key={p.id} className="confetti-piece" style={{
-          left:`${p.x}%`,
-          background: p.color,
-          animationDelay:`${p.delay}s`,
-          animationDuration:`${p.duration}s`,
-          transform:`rotate(${p.rotate}deg)`,
-        }}/>
+    <div className="celebrate">
+      {[...Array(16)].map((_,i)=>(
+        <div key={i} className="confetti" style={{ left: (5+i*6)+"%", animationDelay: (i*0.04)+"s", top: "10%" }}>
+          {items[i%items.length]}
+        </div>
       ))}
+      <div className="txt">{text}</div>
+    </div>
+  );
+}
+function celebrateInline(setMsg, txt) { setMsg(txt); setTimeout(()=>setMsg(null), 1400); }
+
+/* ---------------- Welcome ---------------- */
+function Welcome({ onChild, onParent }) {
+  return (
+    <div className="center-col">
+      <div className="logo">🌊 Ocean Voices</div>
+      <div className="tagline">A magical underwater friendship that quietly teaches communication</div>
+      <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center'}}>
+        <button className="btn gold" onClick={onChild}>Start Adventure 🐠</button>
+        <button className="btn ghost" onClick={onParent}>Parent Setup ⚙️</button>
+      </div>
     </div>
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────────
-function OralApp() {
-  const saved = loadState();
+/* ---------------- Setup Wizard ---------------- */
+function Wizard({ state, setState, onDone }) {
+  const [step, setStep] = useState(1);
+  const [d, setD] = useState({ ...state });
+  const up = (k,v)=> setD(p=>({ ...p, [k]:v }));
+  const toggleArr = (k,v)=> setD(p=>({ ...p, [k]: p[k].includes(v) ? p[k].filter(x=>x!==v) : [...p[k],v] }));
+  const next = ()=> setStep(s=>Math.min(4,s+1));
+  const back = ()=> setStep(s=>Math.max(1,s-1));
+  const band = ageBandFor(d.childAge);
+  const save = () => {
+    const ns = { ...state, ...d, ageBand: band, setupDone: true };
+    setState(ns); saveState(ns); onDone();
+  };
+  return (
+    <div className="center-col">
+      <div className="panel scroll">
+        <div className="steps">{[1,2,3,4].map(i=><div key={i} className={"dot"+(i<=step?" on":"")}/>)}</div>
 
-  const [view, setView] = useState(saved ? 'talk' : 'welcome'); // welcome | wizard | talk | fishgame | dashboard | celebration
-  const [apiKey, setApiKey] = useState(saved?.apiKey || '');
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [showApiKeyScreen, setShowApiKeyScreen] = useState(!saved?.apiKey);
-  const [level, setLevel] = useState(saved?.level || 1);
-  const [stars, setStars] = useState(saved?.stars || 0);
-  const [totalStars, setTotalStars] = useState(saved?.totalStars || 0);
-  const [levelProgress, setLevelProgress] = useState(saved?.levelProgress || Array(10).fill(0));
-  const [sessionTurns, setSessionTurns] = useState(0);
-  const [sessionWords, setSessionWords] = useState(0);
-  const [messages, setMessages] = useState([]);
-  const [speaking, setSpeaking] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [lastText, setLastText] = useState('');
-  const [celebrating, setCelebrating] = useState(false);
-  const [typingMode, setTypingMode] = useState(false);
-  const [textInput, setTextInput] = useState('');
-  const [wizardChoice, setWizardChoice] = useState(null);
-  const [wizardLevel, setWizardLevel] = useState(1);
-  const [fishMoved, setFishMoved] = useState(0);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationMsg, setCelebrationMsg] = useState('');
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
-  const [dashUnlocked, setDashUnlocked] = useState(false);
-  const [starBursts, setStarBursts] = useState([]);
-
-  const canvasRef = useRef(null);
-  const sceneState = useRef({ speaking: false, listening: false, lastText: '', celebrating: false });
-  const recognitionRef = useRef(null);
-  const ttsRef = useRef(null);
-
-  // Sync refs
-  useEffect(() => { sceneState.current.speaking = speaking; }, [speaking]);
-  useEffect(() => { sceneState.current.listening = listening; }, [listening]);
-  useEffect(() => { sceneState.current.lastText = lastText; }, [lastText]);
-  useEffect(() => { sceneState.current.celebrating = celebrating; }, [celebrating]);
-
-  // Persist
-  useEffect(() => {
-    if (apiKey) saveState({ apiKey, level, stars, totalStars, levelProgress });
-  }, [apiKey, level, stars, totalStars, levelProgress]);
-
-  const levelData = LEVELS[level - 1];
-
-  // ── Talk scene setup ──
-  useEffect(() => {
-    if (view !== 'talk' || !canvasRef.current) return;
-    const cleanup = setupTalkScene(canvasRef.current, sceneState);
-    return cleanup;
-  }, [view]);
-
-  // Fish scene setup
-  useEffect(() => {
-    if (view !== 'fishgame' || !canvasRef.current) return;
-    const fishCount = levelData.fish;
-    setFishMoved(0);
-    let done = false;
-    const cleanup = setupFishScene(canvasRef.current, {
-      fishCount,
-      onComplete: (moved) => {
-        setFishMoved(moved);
-        if (moved >= fishCount && !done) {
-          done = true;
-          setTimeout(() => levelUp(), 1000);
-        }
-      }
-    });
-    return cleanup;
-  }, [view]);
-
-  // ── Greeting on enter talk ──
-  useEffect(() => {
-    if (view === 'talk' && messages.length === 0 && apiKey) {
-      const timeout = setTimeout(() => oralSpeak(getGreeting(level)), 1200);
-      return () => clearTimeout(timeout);
-    }
-  }, [view, apiKey]);
-
-  function getGreeting(lvl) {
-    const greetings = [
-      "Hellooo! I'm Oral! Can you make any sound for me? Even just say ooh! 🎉",
-      "Hi there! I'm so happy to see you! Can you say hello to me? 👋",
-      "Hello hello! I'm Oral! What's your favourite colour? Tell me two words! 🌈",
-      "Yay, you're here! I'm Oral! What is your favourite food? Tell me! 🍎",
-      "Amazing, you came to play! I'm Oral! Tell me about your favourite animal! 🐬",
-      "Wonderful! I'm Oral! Tell me something you did today — a whole sentence! ✨",
-      "Incredible! I'm Oral! Tell me about your best ever day! 🌟",
-      "Wow, fantastic! I'm Oral! Tell me a short story about a fish! 📖",
-      "Oh wow, you're amazing! I'm Oral! What do you love most in the whole world? 🎤",
-      "You are INCREDIBLE! I'm Oral — and so are you! What shall we talk about today? 🏆",
-    ];
-    return greetings[lvl - 1];
-  }
-
-  function oralSpeak(text) {
-    window.speechSynthesis && window.speechSynthesis.cancel();
-    setSpeaking(true);
-    setLastText(text);
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.88;
-    utter.pitch = 1.1;
-    utter.volume = 1;
-    utter.onend = () => setSpeaking(false);
-    utter.onerror = () => setSpeaking(false);
-    ttsRef.current = utter;
-    window.speechSynthesis && window.speechSynthesis.speak(utter);
-  }
-
-  async function sendMessage(userText) {
-    if (!userText.trim() || !apiKey) return;
-    const wordCount = userText.trim().split(/\s+/).length;
-    const starsEarned = wordCount >= 5 ? 3 : wordCount >= 2 ? 2 : 1;
-
-    setSessionTurns(t => t + 1);
-    setSessionWords(w => w + wordCount);
-
-    const newMessages = [...messages, { role: 'user', content: userText }];
-    setMessages(newMessages);
-
-    // Show star burst
-    const burstId = Date.now();
-    setStarBursts(bs => [...bs, { id: burstId, count: starsEarned }]);
-    setTimeout(() => setStarBursts(bs => bs.filter(b => b.id !== burstId)), 900);
-
-    const newStars = stars + starsEarned;
-    setStars(newStars);
-    setTotalStars(ts => ts + starsEarned);
-
-    try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 200,
-          system: buildSystemPrompt(level),
-          messages: newMessages,
-        }),
-      });
-      const data = await resp.json();
-      const reply = data.content?.[0]?.text || "Wonderful! You are amazing! Can you tell me more?";
-      setMessages(m => [...m, { role: 'assistant', content: reply }]);
-      oralSpeak(reply);
-    } catch(e) {
-      const fallback = "Amazing! You are doing so well! Can you tell me something else?";
-      setMessages(m => [...m, { role: 'assistant', content: fallback }]);
-      oralSpeak(fallback);
-    }
-
-    if (newStars >= levelData.stars) {
-      setTimeout(() => {
-        setStars(0);
-        setView('fishgame');
-      }, 2000);
-    }
-  }
-
-  function levelUp() {
-    setCelebrating(true);
-    const newProgress = [...levelProgress];
-    newProgress[level - 1] = 1;
-    setLevelProgress(newProgress);
-    const nextLevel = Math.min(level + 1, 10);
-    setCelebrationMsg(level >= 10
-      ? "🏆 You are an Oral Master! Incredible achievement!"
-      : `🎉 Level ${level} complete! Welcome to Level ${nextLevel} — ${LEVELS[nextLevel-1].name}!`
-    );
-    setShowCelebration(true);
-    setTimeout(() => {
-      setLevel(nextLevel);
-      setMessages([]);
-      setStars(0);
-      setCelebrating(false);
-      setShowCelebration(false);
-      setView('talk');
-    }, 5000);
-  }
-
-  function startMic() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setTypingMode(true);
-      return;
-    }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SR();
-    rec.continuous = false;
-    rec.interimResults = false;
-    rec.lang = 'en-GB';
-    rec.onstart = () => setListening(true);
-    rec.onend = () => setListening(false);
-    rec.onresult = (e) => {
-      const text = e.results[0][0].transcript;
-      sendMessage(text);
-    };
-    rec.onerror = () => setListening(false);
-    recognitionRef.current = rec;
-    rec.start();
-  }
-
-  function stopMic() {
-    recognitionRef.current?.stop();
-    setListening(false);
-  }
-
-  function handleApiKeySubmit() {
-    if (!apiKeyInput.trim()) return;
-    setApiKey(apiKeyInput.trim());
-    setShowApiKeyScreen(false);
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  if (showApiKeyScreen) {
-    return (
-      <div className="apikey-screen">
-        <div className="apikey-box">
-          <div className="welcome-fish">🐠</div>
-          <div className="apikey-title">Welcome to Oral!</div>
-          <p style={{color:'#a0a0c0',marginBottom:20,fontSize:'.95rem',lineHeight:1.6}}>
-            Oral uses Claude AI to have real conversations.<br/>
-            Please enter your Anthropic API key to get started.
-          </p>
-          <input
-            className="apikey-input"
-            type="password"
-            placeholder="sk-ant-api..."
-            value={apiKeyInput}
-            onChange={e => setApiKeyInput(e.target.value)}
-            onKeyDown={e => e.key==='Enter' && handleApiKeySubmit()}
-          />
-          <button className="btn btn-primary" style={{width:'100%'}} onClick={handleApiKeySubmit}>
-            Let's Begin! 🚀
-          </button>
-          <div className="apikey-note">
-            Your key is stored locally on this device only and never sent anywhere except the Anthropic API.
-            Get a key at console.anthropic.com
+        {step===1 && <>
+          <h2>Child Profile</h2><div className="sub">Tell us about your child</div>
+          <label>Child's name</label>
+          <input type="text" value={d.childName} onChange={e=>up('childName',e.target.value)} />
+          <label>Age: {d.childAge}</label>
+          <input type="range" min="3" max="10" value={d.childAge} onChange={e=>up('childAge',+e.target.value)} />
+          <div className="card" style={{marginTop:14}}>
+            <b>Age Band:</b> {ageBandName(band)} <br/>
+            <small style={{opacity:.8}}>Band {band} ({band===1?"3-5":band===2?"6-7":"8-10"} years)</small>
           </div>
-        </div>
-      </div>
-    );
-  }
+        </>}
 
-  if (view === 'welcome') {
-    return (
-      <div className="welcome-bg">
-        <div className="welcome-fish">🐠</div>
-        <div className="welcome-title">Oral</div>
-        <div className="welcome-sub">A magical speech companion for children.<br/>Talk to Oral, earn stars, play the fish game!</div>
-        <div style={{display:'flex',gap:16,flexWrap:'wrap',justifyContent:'center',marginTop:8}}>
-          <button className="btn btn-primary" onClick={() => setView('wizard')}>Let's Get Started! 🌟</button>
-          <button className="btn" style={{background:'rgba(255,255,255,.1)',color:'#fff'}} onClick={() => { setDashUnlocked(false); setView('dashboard'); }}>
-            📊 Parent / Carer Area
-          </button>
-        </div>
-        <div style={{marginTop:16,fontSize:'.8rem',color:'rgba(255,255,255,.35)'}}>
-          Oral v2.0 — Speech & Language Companion
-        </div>
-      </div>
-    );
-  }
-
-  if (view === 'wizard') {
-    return (
-      <div className="wizard-wrap">
-        <div className="wizard-box">
-          <div className="wizard-title">🌟 Let's Find the Right Starting Level</div>
-          {wizardChoice === null ? (
-            <>
-              <div className="wizard-q">Which best describes your child's speech right now?</div>
-              {WIZARD_OPTIONS.map((opt, i) => (
-                <div
-                  key={i}
-                  className={`wizard-option${wizardChoice === i ? ' selected' : ''}`}
-                  onClick={() => { setWizardChoice(i); setWizardLevel(i + 1); }}
-                >
-                  <div className="wizard-option-num">{i + 1}</div>
-                  <div className="wizard-option-text">{opt}</div>
-                </div>
-              ))}
-            </>
-          ) : (
-            <div className="level-confirm">
-              <div style={{fontSize:'1rem',color:'#a0a0c0',marginBottom:8}}>We recommend starting at</div>
-              <div className="level-name">{LEVELS[wizardLevel-1].emoji} Level {wizardLevel} — {LEVELS[wizardLevel-1].name}</div>
-              <div className="level-desc">{LEVELS[wizardLevel-1].desc}</div>
-              <div className="level-adj">
-                <button className="adj-btn" onClick={() => setWizardLevel(l => Math.max(1, l-1))}>−</button>
-                <div className="adj-num">{wizardLevel}</div>
-                <button className="adj-btn" onClick={() => setWizardLevel(l => Math.min(10, l+1))}>+</button>
-              </div>
-              <button className="btn btn-green" onClick={() => {
-                setLevel(wizardLevel);
-                setStars(0);
-                setMessages([]);
-                setView('talk');
-              }}>
-                Start at Level {wizardLevel}! 🚀
-              </button>
-              <br/><br/>
-              <button className="btn btn-sm" style={{background:'rgba(255,255,255,.1)',color:'#ccc'}} onClick={() => setWizardChoice(null)}>← Back</button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (view === 'talk') {
-    const pct = Math.min((stars / levelData.stars) * 100, 100);
-    return (
-      <div style={{position:'relative',width:'100%',height:'100%',background:'#87CEEB'}}>
-        <canvas ref={canvasRef} style={{width:'100%',height:'100%',display:'block'}}/>
-        <div className="talk-overlay">
-          <div className="talk-top">
-            <div className="level-badge">{levelData.emoji} Level {level}: {levelData.name}</div>
-            <div className="stars-bar">
-              <div className="stars-label">⭐ Stars to fish game!</div>
-              <div className="stars-track"><div className="stars-fill" style={{width:`${pct}%`}}/></div>
-              <div className="star-count">{stars} / {levelData.stars} stars</div>
-            </div>
-            <div style={{display:'flex',gap:8}}>
-              <button className="icon-btn" title="Change Level" onClick={() => { setWizardChoice(null); setView('wizard'); }}>⚙️</button>
-              <button className="icon-btn" title="Parent Area" onClick={() => { setDashUnlocked(false); setView('dashboard'); }}>📊</button>
-            </div>
-          </div>
-
-          <div style={{flex:1}}/>
-
-          {starBursts.map(b => (
-            <div key={b.id} className="star-burst" style={{bottom:'100px',left:'50%',transform:'translateX(-50%)'}}>
-              {'⭐'.repeat(b.count)}
-            </div>
+        {step===2 && <>
+          <h2>Communication Level</h2><div className="sub">How does your child usually communicate?</div>
+          {COMM_LEVELS.map((c,i)=>(
+            <div key={i} className={"opt"+(d.communicationLevel===i+1?" active":"")} style={{marginBottom:8}}
+                 onClick={()=>up('communicationLevel',i+1)}>{c}</div>
           ))}
+        </>}
 
-          <div className="talk-bottom">
-            {typingMode ? (
-              <div className="input-row">
-                <input
-                  className="text-input"
-                  value={textInput}
-                  onChange={e => setTextInput(e.target.value)}
-                  placeholder="Type what you want to say..."
-                  onKeyDown={e => { if(e.key==='Enter' && textInput.trim()) { sendMessage(textInput); setTextInput(''); }}}
-                />
-                <button className="send-btn" onClick={() => { if(textInput.trim()) { sendMessage(textInput); setTextInput(''); }}}>➤</button>
-                <button className="icon-btn" onClick={() => setTypingMode(false)} title="Use microphone">🎤</button>
-              </div>
-            ) : (
-              <div className="input-row">
-                <button
-                  className={`mic-btn ${listening ? 'mic-active' : 'mic-idle'}`}
-                  onMouseDown={startMic}
-                  onMouseUp={stopMic}
-                  onTouchStart={startMic}
-                  onTouchEnd={stopMic}
-                  title={listening ? 'Listening...' : 'Hold to speak'}
-                >
-                  {listening ? '🔴' : '🎤'}
-                </button>
-                <div style={{flex:1,textAlign:'center'}}>
-                  <div style={{color:'rgba(255,255,255,.7)',fontSize:'.9rem'}}>
-                    {listening ? '🎙️ Listening... speak now!' : 'Hold the mic button and speak to Oral!'}
-                  </div>
-                  <button className="type-toggle" onClick={() => setTypingMode(true)}>✍️ Type instead</button>
-                </div>
-              </div>
-            )}
+        {step===3 && <>
+          <h2>Interests & Sensory</h2><div className="sub">Pick what your child loves</div>
+          <div className="pill-grid">
+            {INTERESTS.map(it=>(
+              <div key={it.id} className={"opt"+(d.interests.includes(it.id)?" active":"")} onClick={()=>toggleArr('interests',it.id)}>{it.label}</div>
+            ))}
           </div>
-        </div>
-
-        {showCelebration && (
-          <div className="celebration">
-            <Confetti/>
-            <div className="celebration-emoji">🎉</div>
-            <div className="celebration-title">{celebrationMsg}</div>
-            <div style={{fontSize:'1rem',color:'#a0a0c0'}}>Get ready for your next adventure...</div>
+          <div className="card row" style={{marginTop:16}}>
+            <div><b>Reduced sensory mode</b><br/><small style={{opacity:.8}}>Less animation, quieter</small></div>
+            <div className={"toggle"+(d.sensoryMode?" on":"")} onClick={()=>up('sensoryMode',!d.sensoryMode)}><div className="knob"/></div>
           </div>
-        )}
-      </div>
-    );
-  }
-
-  if (view === 'fishgame') {
-    const fishTotal = levelData.fish;
-    const pct = Math.min((fishMoved / fishTotal) * 100, 100);
-    return (
-      <div style={{position:'relative',width:'100%',height:'100%',background:'#010820'}}>
-        <canvas ref={canvasRef} style={{width:'100%',height:'100%',display:'block'}}/>
-        <div className="fish-overlay">
-          <div className="fish-top">
-            <div style={{color:'#4488FF',fontWeight:700,fontSize:'1rem'}}>🐠 Fish Move Game!</div>
-            <div className="fish-progress-wrap">
-              <div className="fish-progress-label">{fishMoved}/{fishTotal} fish moved! 🐟</div>
-              <div className="fish-track"><div className="fish-fill" style={{width:`${pct}%`}}/></div>
-            </div>
-            <div style={{fontSize:'.8rem',color:'#607090'}}>Level {level}</div>
+          <div className="card row">
+            <div><b>Touch / PECS mode</b><br/><small style={{opacity:.8}}>No speech required</small></div>
+            <div className={"toggle"+(d.pecsMode?" on":"")} onClick={()=>up('pecsMode',!d.pecsMode)}><div className="knob"/></div>
           </div>
-        </div>
-        <div className="fish-hint">👆 Tap a fish in the left tank to move it!</div>
+        </>}
 
-        {showCelebration && (
-          <div className="celebration">
-            <Confetti/>
-            <div className="celebration-emoji">🏆</div>
-            <div className="celebration-title">{celebrationMsg}</div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (view === 'dashboard') {
-    if (!dashUnlocked) {
-      return (
-        <div style={{position:'relative',width:'100%',height:'100%',background:'linear-gradient(135deg,#0f0c29,#1a0533)'}}>
-          <div className="pin-screen">
-            <div style={{fontSize:'2rem'}}>🔒</div>
-            <div className="pin-title">Parent / Carer Area</div>
-            <div style={{color:'#a0a0c0',fontSize:'.9rem'}}>Enter PIN to continue</div>
-            <input
-              className="pin-input"
-              type="password"
-              maxLength={4}
-              value={pinInput}
-              onChange={e => { setPinInput(e.target.value); setPinError(''); }}
-              placeholder="••••"
-              onKeyDown={e => {
-                if (e.key==='Enter') {
-                  if (pinInput === '1234') { setDashUnlocked(true); setPinInput(''); }
-                  else setPinError('Incorrect PIN. Default is 1234');
-                }
-              }}
-            />
-            {pinError && <div className="pin-error">{pinError}</div>}
-            <button className="btn btn-primary" onClick={() => {
-              if (pinInput === '1234') { setDashUnlocked(true); setPinInput(''); }
-              else setPinError('Incorrect PIN. Default is 1234');
-            }}>Enter</button>
-            <button className="btn btn-sm" style={{background:'rgba(255,255,255,.1)',color:'#ccc',marginTop:8}} onClick={() => setView('welcome')}>← Back</button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="dash-wrap">
-        <div className="dash-box">
-          <div className="dash-title">📊 Parent & Carer Dashboard</div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Current Progress</div>
-            <div className="stat-grid">
-              <div className="stat-card">
-                <div className="stat-val">{level}/10</div>
-                <div className="stat-label">Current Level</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-val">{totalStars}</div>
-                <div className="stat-label">Total Stars Earned</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-val">{sessionTurns}</div>
-                <div className="stat-label">Session Turns</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-val">{sessionWords}</div>
-                <div className="stat-label">Words This Session</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Level Progress</div>
-            {LEVELS.map((l, i) => (
-              <div className="level-row" key={l.num}>
-                <div className="level-row-name">{l.emoji} {l.name}</div>
-                <div className="level-row-track">
-                  <div className="level-row-fill" style={{width: i < level-1 ? '100%' : i === level-1 ? `${Math.min((stars/l.stars)*100,100)}%` : '0%'}}/>
-                </div>
-                <div className="level-row-status">
-                  {i < level-1 ? '✅' : i === level-1 ? `L${level}` : '🔒'}
-                </div>
+        {step===4 && <>
+          <h2>Companion Setup</h2><div className="sub">Create your ocean friend</div>
+          <label>Companion name</label>
+          <input type="text" value={d.companionName} onChange={e=>up('companionName',e.target.value)} />
+          <label>Companion type</label>
+          <div className="pill-grid">
+            {Object.entries(COMPANION_EMOJI).map(([k,e])=>(
+              <div key={k} className={"opt big"+(d.companionType===k?" active":"")} onClick={()=>up('companionType',k)}>
+                {e}<span>{k}</span>
               </div>
             ))}
           </div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Session Recommendations</div>
-            <div className="info-box">
-              ⏱️ <strong>Duration:</strong> 10–15 minutes per session<br/>
-              📅 <strong>Frequency:</strong> 3–5 sessions per week<br/>
-              🔇 <strong>Environment:</strong> Quiet room, minimal background noise<br/>
-              👀 <strong>Supervision:</strong> Sit with your child for best results<br/>
-              💻 <strong>Browser:</strong> Chrome or Edge for speech recognition
-            </div>
+          <label>Personality</label>
+          <div className="pill-grid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
+            {["playful","calm","adventurous"].map(p=>(
+              <div key={p} className={"opt"+(d.personality===p?" active":"")} onClick={()=>up('personality',p)}>{p}</div>
+            ))}
           </div>
+        </>}
 
-          <div className="dash-section">
-            <div className="dash-section-title">Therapy Approach</div>
-            <div className="info-box">
-              Oral uses evidence-based speech therapy methods: <strong>Model-Expand</strong>, <strong>Positive Reinforcement</strong>, and <strong>Progressive Scaffolding</strong>. Every attempt is celebrated. Oral never corrects pronunciation or expresses disappointment.<br/><br/>
-              <strong>⚠️ Important:</strong> Oral supplements but does not replace a qualified Speech and Language Therapist (SLT).
-            </div>
-          </div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Safeguarding</div>
-            <div className="info-box">
-              If a child mentions being hurt or in danger, Oral responds: <em>"Please find a grown-up right now! They will help you!"</em> and redirects. No personal data is collected or stored server-side.
-            </div>
-          </div>
-
-          <div style={{display:'flex',gap:12,justifyContent:'center',marginTop:8,flexWrap:'wrap'}}>
-            <button className="btn btn-primary" onClick={() => { setDashUnlocked(false); setView('talk'); }}>▶ Back to Oral</button>
-            <button className="btn" style={{background:'rgba(255,255,255,.1)',color:'#ccc'}} onClick={() => { setWizardChoice(null); setDashUnlocked(false); setView('wizard'); }}>⚙️ Change Level</button>
-            <button className="btn" style={{background:'rgba(255,255,255,.1)',color:'#ccc'}} onClick={() => { setDashUnlocked(false); setView('welcome'); }}>🏠 Home</button>
-          </div>
+        <div className="row" style={{marginTop:22}}>
+          <button className="btn ghost sm" onClick={back} disabled={step===1} style={{opacity:step===1?.3:1}}>← Back</button>
+          {step<4 ? <button className="btn sm" onClick={next}>Next →</button>
+                  : <button className="btn gold sm" onClick={save}>Save & Dive In 🌊</button>}
         </div>
       </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<OralApp/>);
+/* ---------------- Dialogue / scaffolding ---------------- */
+const WORD_BANK = [
+  {word:"fish", emoji:"🐟"},{word:"turtle", emoji:"🐢"},{word:"dolphin", emoji:"🐬"},
+  {word:"crab", emoji:"🦀"},{word:"star", emoji:"⭐"},{word:"blue", emoji:"🔵"},
+  {word:"octopus", emoji:"🐙"},{word:"shell", emoji:"🐚"},{word:"whale", emoji:"🐋"}
+];
+function buildPrompt(level, target) {
+  const w = target.word.toUpperCase();
+  switch(level){
+    case 1: return `Can you say... ${w}? ${target.emoji}`;
+    case 2: return `Look, it's a ___ ! Can you say ${w}? ${target.emoji}`;
+    case 3: return `What is this ${target.emoji}? Can you tell me?`;
+    case 4: return `Wow, look who's here ${target.emoji}! What do you see?`;
+    default: return `Hi! Tell me all about this friend ${target.emoji}!`;
+  }
+}
+const REWARD_POOL = [
+  {type:"jelly",emoji:"🪼",name:"Glow the Jellyfish"},{type:"shark",emoji:"🦈",name:"Chomp the Shark"},
+  {type:"crab",emoji:"🦀",name:"Pinch the Crab"},{type:"octopus",emoji:"🐙",name:"Ollie the Octopus"},
+  {type:"whale",emoji:"🐋",name:"Bloo the Whale"},{type:"dolphin",emoji:"🐬",name:"Splash the Dolphin"},
+  {type:"starfish",emoji:"⭐",name:"Twinkle the Starfish"},{type:"pufferfish",emoji:"🐡",name:"Puffy the Pufferfish"}
+];
+function addReward(setState) {
+  setState(prev => {
+    const got = REWARD_POOL[(prev.aquarium.length - 3 + REWARD_POOL.length) % REWARD_POOL.length];
+    const ns = { ...prev, aquarium: [...prev.aquarium, { ...got, date: todayStr() }] };
+    saveState(ns); return ns;
+  });
+}
+
+/* ---------------- Main Underwater World ---------------- */
+function World({ state, setState, openGame, openAquarium, openParent }) {
+  const [mood, setMood] = useState("GREETING");
+  const [text, setText] = useState("");
+  const [target, setTarget] = useState(WORD_BANK[0]);
+  const [celebrate, setCelebrate] = useState(null);
+  const speech = useSpeech();
+  const pecs = state.pecsMode || !speech.available;
+  const compEmoji = COMPANION_EMOJI[state.companionType] || "🐢";
+
+  useEffect(() => {
+    setText(`Hi ${state.childName}! I've been waiting for you! Ready to explore the ocean? 🌊`);
+    setState(prev => { const ns = { ...prev, totalSessions: prev.totalSessions + 1 }; saveState(ns); return ns; });
+    const t = setTimeout(()=> newTarget(), 3200);
+    return ()=> clearTimeout(t);
+  // eslint-disable-next-line
+  }, []);
+
+  function newTarget() {
+    const w = WORD_BANK[Math.floor(Math.random()*WORD_BANK.length)];
+    setTarget(w); setMood("WAITING"); setText(buildPrompt(state.communicationLevel, w));
+  }
+
+  function recordAttempt(word, mastered) {
+    setState(prev => {
+      const wa = prev.wordsAttempted.includes(word) ? prev.wordsAttempted : [...prev.wordsAttempted, word];
+      const wm = mastered && !prev.wordsMastered.includes(word) ? [...prev.wordsMastered, word] : prev.wordsMastered;
+      const hist = [...prev.sessionHistory];
+      const today = todayStr();
+      const idx = hist.findIndex(h=>h.date===today);
+      if (idx>=0) hist[idx] = { ...hist[idx], attempts: hist[idx].attempts+1 };
+      else hist.push({ date: today, attempts: 1 });
+      const ns = { ...prev, wordsAttempted: wa, wordsMastered: wm, totalAttempts: prev.totalAttempts+1, sessionHistory: hist };
+      saveState(ns); return ns;
+    });
+  }
+  function fire(msg) { setCelebrate(msg); setTimeout(()=>setCelebrate(null), 1600); }
+
+  function evaluate(said) {
+    const tier = matchTier(said, target.word);
+    if (tier === "exact") {
+      setMood("CELEBRATING"); setText(`Amazing! You said ${target.word.toUpperCase()}! ⭐`);
+      recordAttempt(target.word, true); addReward(setState); fire("⭐ Amazing! ⭐");
+    } else if (tier === "close") {
+      setMood("CELEBRATING"); setText(`So close — great trying! ${target.word.toUpperCase()}! 💙`);
+      recordAttempt(target.word, false); addReward(setState); fire("💙 Great job! 💙");
+    } else if (tier === "any") {
+      setMood("ENCOURAGING"); setText(`That's great! Try again! You can do it! 💙`);
+      recordAttempt(target.word, false);
+    } else {
+      setMood("TEACHING"); setText(`Let's try together. Can you say... ${target.word.toUpperCase()}? ${target.emoji}`);
+    }
+    setTimeout(newTarget, 3000);
+  }
+
+  function onMic() {
+    if (pecs) return;
+    setMood("LISTENING"); setText("I'm listening... 🎤");
+    speech.listen(()=>{}, result => evaluate(result));
+  }
+
+  const happy = mood === "CELEBRATING";
+  return (
+    <div style={{height:'100%',position:'relative'}}>
+      <div className="topbar">
+        <div className="badge">Hi {state.childName}! 👋</div>
+        <div className="badge" onClick={openAquarium} style={{cursor:'pointer'}}>🐟 {state.aquarium.length} friends</div>
+      </div>
+
+      <div style={{position:'absolute',top:'16%',left:0,right:0,bottom:'120px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',padding:'0 16px'}}>
+        <div className={"speech"+(mood==="LISTENING"?" listening":"")}>
+          {text}
+          {mood==="LISTENING" && <div className="wave">{[...Array(7)].map((_,i)=><i key={i} style={{animationDelay:(i*0.1)+"s"}}/>)}</div>}
+        </div>
+        <div className={"companion"+(happy?" happy":"")}>{compEmoji}</div>
+
+        {pecs && (mood==="WAITING"||mood==="TEACHING"||mood==="ENCOURAGING") && (
+          <div className="pecs-grid" style={{marginTop:18}}>
+            {WORD_BANK.slice(0,6).map(w=>(
+              <div key={w.word} className="pecs" onClick={()=>evaluate(w.word)}>
+                <div className="e">{w.emoji}</div><div className="t">{w.word}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bottombar">
+        <button className="actbtn" onClick={()=>openGame('feed')}>🐬<span>Feed</span></button>
+        <button className="actbtn" onClick={()=>openGame('bubble')}>🫧<span>Pop</span></button>
+        <button className="actbtn" onClick={()=>openGame('find')}>🐢<span>Find</span></button>
+        <button className="actbtn" onClick={()=>openGame('name')}>🦑<span>Name</span></button>
+        {!pecs && <button className={"actbtn mic"+(mood==="LISTENING"?" on":"")} onClick={onMic}>🎤<span>Speak</span></button>}
+        <button className="actbtn" onClick={openParent}>🔒<span>Parent</span></button>
+      </div>
+
+      {celebrate && <Celebration text={celebrate} />}
+    </div>
+  );
+}
+
+/* ---------------- Mini Game shell ---------------- */
+function GameShell({ title, children, onClose }) {
+  return (
+    <div className="overlay">
+      <div className="panel modal scroll" style={{position:'relative'}}>
+        <button className="btn ghost sm" style={{position:'absolute',top:14,right:14,minHeight:40,padding:'6px 14px'}} onClick={onClose}>✕</button>
+        <h2 style={{textAlign:'center'}}>{title}</h2>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* Game 1: Feed the Dolphin */
+function FeedGame({ state, onReward, onClose }) {
+  const foods = [{w:"fish",e:"🐟"},{w:"seaweed",e:"🌿"},{w:"crab",e:"🦀"},{w:"shrimp",e:"🦐"}];
+  const [round, setRound] = useState(0);
+  const target = [foods[0].w, foods[3].w, foods[1].w];
+  const [msg, setMsg] = useState(null);
+  const [happy, setHappy] = useState(false);
+  const speech = useSpeech();
+  const pecs = state.pecsMode || !speech.available;
+  const cur = target[round];
+  const curFood = foods.find(f=>f.w===cur);
+  function pick(w) {
+    const tier = matchTier(w, cur);
+    if (tier==="exact" || tier==="close") {
+      setHappy(true); celebrateInline(setMsg, "Yum! 🐬");
+      setTimeout(()=>{ setHappy(false);
+        if (round < 2) setRound(r=>r+1);
+        else { onReward(); celebrateInline(setMsg,"⭐ All fed! New friend! ⭐"); setTimeout(onClose,1500); }
+      }, 1100);
+    } else celebrateInline(setMsg, "Try again! 💙");
+  }
+  function mic(){ speech.listen(()=>{}, r=>pick(r||"")); }
+  return (
+    <GameShell title="🐬 Feed the Dolphin" onClose={onClose}>
+      <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 3</div>
+      <div className={"companion"+(happy?" happy":"")} style={{fontSize:90,textAlign:'center'}}>🐬</div>
+      <div className="speech" style={{margin:'12px auto'}}>What should we feed Dolphin? Can you say... {cur.toUpperCase()}? {curFood.e}</div>
+      <div className="pill-grid">
+        {foods.map(f=><div key={f.w} className="gameopt" onClick={()=>pick(f.w)}>{f.e}<span>{f.w}</span></div>)}
+      </div>
+      {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
+      {msg && <Celebration text={msg} />}
+    </GameShell>
+  );
+}
+
+/* Game 2: Bubble Pop */
+function BubbleGame({ state, onReward, onClose }) {
+  const items = [{w:"blue",c:"#3b82f6"},{w:"red",c:"#ef4444"},{w:"green",c:"#22c55e"},{w:"yellow",c:"#eab308"},{w:"one",c:"#a855f7"}];
+  const [round, setRound] = useState(0);
+  const [msg, setMsg] = useState(null);
+  const speech = useSpeech();
+  const pecs = state.pecsMode || !speech.available;
+  const cur = items[round % items.length];
+  function pop(w) {
+    if (w===cur.w) { celebrateInline(setMsg,"Pop! 🫧");
+      setTimeout(()=>{ if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ All popped! ⭐"); setTimeout(onClose,1500);} },1000);
+    } else celebrateInline(setMsg,"Try the "+cur.w+"! 💙");
+  }
+  function mic(){ speech.listen(()=>{}, r=>{ const said=(r||""); const hit=items.find(i=>said.includes(i.w)); pop(hit?hit.w:said); }); }
+  return (
+    <GameShell title="🫧 Bubble Pop" onClose={onClose}>
+      <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 5</div>
+      <div className="speech" style={{margin:'10px auto'}}>Pop the {cur.w.toUpperCase()} bubble! Say {cur.w.toUpperCase()}!</div>
+      <div className="pill-grid">
+        {items.map(it=>(
+          <div key={it.w} className="gameopt" style={{background:it.c,color:'#fff',borderRadius:'50%',width:110,height:110,margin:'0 auto'}} onClick={()=>pop(it.w)}>
+            🫧<span>{it.w}</span>
+          </div>
+        ))}
+      </div>
+      {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
+      {msg && <Celebration text={msg} />}
+    </GameShell>
+  );
+}
+
+/* Game 3: Find the Turtle */
+function FindGame({ state, onReward, onClose }) {
+  const spots = [{w:"coral",e:"🪸"},{w:"rock",e:"🪨"},{w:"seaweed",e:"🌿"}];
+  const [round, setRound] = useState(0);
+  const [hide, setHide] = useState(()=>Math.floor(Math.random()*3));
+  const [msg, setMsg] = useState(null);
+  const [found, setFound] = useState(false);
+  const speech = useSpeech();
+  const pecs = state.pecsMode || !speech.available;
+  function pick(i) {
+    if (i===hide) { setFound(true); celebrateInline(setMsg,"Found you! 🐢");
+      setTimeout(()=>{ setFound(false);
+        if (round<2) { setRound(r=>r+1); setHide(Math.floor(Math.random()*3)); }
+        else { onReward(); celebrateInline(setMsg,"⭐ Turtle master! ⭐"); setTimeout(onClose,1500); }
+      },1100);
+    } else celebrateInline(setMsg,"Look somewhere else! 💙");
+  }
+  function mic(){ speech.listen(()=>{}, r=>{ const s=spots.findIndex(x=>(r||"").includes(x.w)); if(s>=0)pick(s); else celebrateInline(setMsg,"Try again! 💙"); }); }
+  return (
+    <GameShell title="🐢 Find the Turtle" onClose={onClose}>
+      <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 3</div>
+      <div className="speech" style={{margin:'10px auto'}}>The turtle is hiding... can you look BEHIND the {spots[hide].w.toUpperCase()}?</div>
+      <div className="pill-grid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
+        {spots.map((s,i)=>(
+          <div key={s.w} className="gameopt" onClick={()=>pick(i)}>{found&&i===hide?"🐢":s.e}<span>{s.w}</span></div>
+        ))}
+      </div>
+      {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
+      {msg && <Celebration text={msg} />}
+    </GameShell>
+  );
+}
+
+/* Game 4: Name the Animal */
+function NameGame({ state, onReward, onClose }) {
+  const animals = [
+    {w:"octopus",e:"🐙",fact:"An octopus has eight arms!"},
+    {w:"whale",e:"🐋",fact:"Whales are the biggest animals on Earth!"},
+    {w:"shark",e:"🦈",fact:"Sharks have lots of teeth!"},
+    {w:"crab",e:"🦀",fact:"Crabs walk sideways!"},
+    {w:"seahorse",e:"🦄",fact:"Daddy seahorses carry the babies!"}
+  ];
+  const [round, setRound] = useState(0);
+  const [msg, setMsg] = useState(null);
+  const [showFact, setShowFact] = useState(false);
+  const speech = useSpeech();
+  const pecs = state.pecsMode || !speech.available;
+  const cur = animals[round];
+  const opts = [cur, animals[(round+1)%5], animals[(round+2)%5]];
+  function pick(w) {
+    if (w===cur.w) { setShowFact(true); celebrateInline(setMsg,"Yes! ⭐");
+      setTimeout(()=>{ setShowFact(false);
+        if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ Animal expert! ⭐"); setTimeout(onClose,1500);}
+      },1900);
+    } else celebrateInline(setMsg,"Try again! 💙");
+  }
+  function mic(){ speech.listen(()=>{}, r=>{ const said=(r||""); const hit=animals.find(a=>said.includes(a.w)); pick(hit?hit.w:said); }); }
+  return (
+    <GameShell title="🦑 Name the Animal" onClose={onClose}>
+      <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 5</div>
+      <div className="companion" style={{fontSize:90,textAlign:'center'}}>{cur.e}</div>
+      <div className="speech" style={{margin:'12px auto'}}>{showFact ? cur.fact+" 🌟" : "Look who's visiting! Who is this?"}</div>
+      <div className="pill-grid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
+        {opts.map(o=><div key={o.w} className="gameopt" onClick={()=>pick(o.w)}>{o.e}<span>{o.w}</span></div>)}
+      </div>
+      {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
+      {msg && <Celebration text={msg} />}
+    </GameShell>
+  );
+}
+
+/* ---------------- Aquarium ---------------- */
+function Aquarium({ state, onClose }) {
+  return (
+    <div className="overlay">
+      <div className="panel modal scroll" style={{position:'relative'}}>
+        <button className="btn ghost sm" style={{position:'absolute',top:14,right:14,minHeight:40,padding:'6px 14px'}} onClick={onClose}>✕</button>
+        <h2 style={{textAlign:'center'}}>🌊 Living Aquarium</h2>
+        <div className="sub" style={{textAlign:'center',fontSize:20,color:'var(--gold)',fontWeight:800}}>
+          Your Ocean Family: {state.aquarium.length} Friends! 🌊
+        </div>
+        <div className="crt-grid">
+          {state.aquarium.map((c,i)=>(
+            <div key={i} className="crt">
+              <div className="e">{c.emoji}</div>
+              <div className="n">{c.name}</div>
+              <div className="d">Collected: {c.date}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Parent Dashboard ---------------- */
+function ProgressChart({ history }) {
+  const ref = useRef();
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext('2d'); const W=c.width=c.offsetWidth, H=c.height=200;
+    ctx.clearRect(0,0,W,H);
+    const days = [];
+    for (let i=6;i>=0;i--){ const dt=new Date(); dt.setDate(dt.getDate()-i); const s=dt.toISOString().slice(0,10);
+      const h=history.find(x=>x.date===s); days.push({ label:s.slice(5), val:h?h.attempts:0 }); }
+    const max = Math.max(1, ...days.map(d=>d.val));
+    const bw = W/days.length;
+    days.forEach((d,i)=>{
+      const bh = (d.val/max)*(H-50);
+      const grd = ctx.createLinearGradient(0,H-bh-30,0,H-30);
+      grd.addColorStop(0,'#7fd7e8'); grd.addColorStop(1,'#00a8a8');
+      ctx.fillStyle=grd;
+      ctx.fillRect(i*bw+8, H-bh-30, bw-16, bh);
+      ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(d.val, i*bw+bw/2, H-bh-36);
+      ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='10px sans-serif';
+      ctx.fillText(d.label, i*bw+bw/2, H-10);
+    });
+  }, [history]);
+  return <canvas ref={ref} style={{width:'100%',height:200,display:'block'}} />;
+}
+
+function ParentDash({ state, setState, onClose }) {
+  const [pin, setPin] = useState("");
+  const [authed, setAuthed] = useState(false);
+  const [tab, setTab] = useState("Overview");
+  function key(n){ const np=(pin+n).slice(0,4); setPin(np); if(np.length===4){ if(np==="1234") setAuthed(true); else setTimeout(()=>setPin(""),300); } }
+
+  if (!authed) return (
+    <div className="overlay">
+      <div className="panel modal" style={{position:'relative',maxWidth:360}}>
+        <button className="btn ghost sm" style={{position:'absolute',top:14,right:14,minHeight:40,padding:'6px 14px'}} onClick={onClose}>✕</button>
+        <h2 style={{textAlign:'center'}}>🔒 Parent Area</h2>
+        <div className="sub" style={{textAlign:'center'}}>Enter PIN (1234)</div>
+        <div className="pin-dots">{[0,1,2,3].map(i=><div key={i} className={pin.length>i?"f":""}/>)}</div>
+        <div className="keypad">
+          {[1,2,3,4,5,6,7,8,9].map(n=><button key={n} onClick={()=>key(""+n)}>{n}</button>)}
+          <button onClick={()=>setPin("")}>↺</button>
+          <button onClick={()=>key("0")}>0</button>
+          <button onClick={()=>setPin(p=>p.slice(0,-1))}>⌫</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const u = (k,v)=>{ const ns={...state,[k]:v}; setState(ns); saveState(ns); };
+  const todayAttempts = (state.sessionHistory.find(h=>h.date===todayStr())||{}).attempts || 0;
+  const tabs = ["Overview","Progress","Settings","Coaching Tips"];
+  const tipsByLevel = {
+    1:["Model the word first, then wait — let your child copy any sound.","Celebrate ALL attempts, even close sounds.","Keep language very simple: one word at a time.","Pair words with gestures and pointing.","Follow your child's lead and interest."],
+    2:["Use fill-in prompts: 'It's a ___ '.","Repeat and expand: 'Fish! Yes, a big blue fish!'","Offer choices: 'Dolphin or turtle?'","Wait 5 seconds after asking a question.","Name things your child looks at."],
+    default:["Ask open questions: 'What do you see?'","Wait 5 seconds after asking a question.","Repeat and expand your child's words.","Offer choices to spark conversation.","Take turns — let your child lead sometimes."]
+  };
+  const tips = tipsByLevel[state.communicationLevel] || tipsByLevel.default;
+
+  return (
+    <div className="overlay">
+      <div className="panel modal scroll" style={{position:'relative',maxWidth:600}}>
+        <button className="btn ghost sm" style={{position:'absolute',top:14,right:14,minHeight:40,padding:'6px 14px'}} onClick={onClose}>✕</button>
+        <h2>Parent Dashboard</h2>
+        <div className="tabs">{tabs.map(t=><div key={t} className={"tab"+(tab===t?" on":"")} onClick={()=>setTab(t)}>{t}</div>)}</div>
+
+        {tab==="Overview" && <>
+          <div className="card" style={{textAlign:'center'}}>
+            <b style={{fontSize:20}}>{state.childName}</b><br/>
+            <span style={{color:'var(--light)'}}>Stage {state.stage}: {STAGE_NAMES[state.stage]}</span>
+          </div>
+          <div className="stat-grid">
+            <div className="stat"><div className="n">{state.wordsAttempted.length}</div><div className="l">Words Attempted</div></div>
+            <div className="stat"><div className="n">{state.wordsMastered.length}</div><div className="l">Words Mastered</div></div>
+            <div className="stat"><div className="n">{Math.max(1,Math.round(state.totalAttempts*0.7))} min</div><div className="l">Session Duration</div></div>
+            <div className="stat"><div className="n">{Math.max(0,state.aquarium.length-3)}</div><div className="l">Rewards Earned</div></div>
+          </div>
+          <label>Conversation Stage</label>
+          <div className="bar-track"><div className="bar-fill" style={{width:Math.min(100,(state.wordsMastered.length/8)*100)+"%"}}/></div>
+          <div className="card"><b>Last session:</b><br/>
+            <small style={{opacity:.85}}>{state.childName} attempted {todayAttempts} words today and is doing wonderfully exploring the ocean. Keep celebrating every try! 💙</small>
+          </div>
+        </>}
+
+        {tab==="Progress" && <>
+          <label>Words Mastered</label>
+          {state.wordsMastered.length ? state.wordsMastered.map(w=>(
+            <div key={w} className="card" style={{padding:'10px 16px'}}>✅ {w}</div>
+          )) : <div className="card"><small style={{opacity:.8}}>No words mastered yet — keep playing!</small></div>}
+          <label>Aquarium</label>
+          <div className="card">🐟 {state.aquarium.length} creatures collected</div>
+          <label>Communication Stage</label>
+          <div className="card" style={{textAlign:'center'}}>
+            <span className="badge" style={{background:'var(--teal)'}}>Stage {state.stage}: {STAGE_NAMES[state.stage]}</span>
+          </div>
+          <label>Attempts per day (last 7 days)</label>
+          <div className="card"><ProgressChart history={state.sessionHistory} /></div>
+        </>}
+
+        {tab==="Settings" && <>
+          <label>Child name</label>
+          <input type="text" value={state.childName} onChange={e=>u('childName',e.target.value)} />
+          <label>Age: {state.childAge}</label>
+          <input type="range" min="3" max="10" value={state.childAge}
+            onChange={e=>{ const a=+e.target.value; const ns={...state,childAge:a,ageBand:ageBandFor(a)}; setState(ns); saveState(ns); }} />
+          <label>Communication level</label>
+          <select value={state.communicationLevel} onChange={e=>u('communicationLevel',+e.target.value)}>
+            {COMM_LEVELS.map((c,i)=><option key={i} value={i+1}>{c}</option>)}
+          </select>
+          <label>Companion name</label>
+          <input type="text" value={state.companionName} onChange={e=>u('companionName',e.target.value)} />
+          <label>Companion type</label>
+          <select value={state.companionType} onChange={e=>u('companionType',e.target.value)}>
+            {Object.keys(COMPANION_EMOJI).map(k=><option key={k} value={k}>{COMPANION_EMOJI[k]} {k}</option>)}
+          </select>
+          <div className="card row" style={{marginTop:14}}>
+            <b>Reduced sensory mode</b>
+            <div className={"toggle"+(state.sensoryMode?" on":"")} onClick={()=>u('sensoryMode',!state.sensoryMode)}><div className="knob"/></div>
+          </div>
+          <div className="card row">
+            <b>Touch / PECS mode</b>
+            <div className={"toggle"+(state.pecsMode?" on":"")} onClick={()=>u('pecsMode',!state.pecsMode)}><div className="knob"/></div>
+          </div>
+          <label>Session time limit</label>
+          <select value={state.sessionLimit||20} onChange={e=>u('sessionLimit',+e.target.value)}>
+            <option value={15}>15 min</option><option value={20}>20 min</option><option value={30}>30 min</option>
+          </select>
+          <button className="btn coral sm" style={{marginTop:18,width:'100%'}} onClick={()=>{
+            if (confirm("Reset all progress? This cannot be undone.")) { localStorage.removeItem('oceanVoices'); location.reload(); }
+          }}>Reset Progress</button>
+        </>}
+
+        {tab==="Coaching Tips" && <>
+          <div className="sub">Tips for: {COMM_LEVELS[state.communicationLevel-1]}</div>
+          {tips.map((t,i)=>(
+            <div key={i} className="card tip"><div className="ic">💡</div><div>{t}</div></div>
+          ))}
+        </>}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Root App ---------------- */
+function App() {
+  const [state, setState] = useState(loadState);
+  const [screen, setScreen] = useState(state.setupDone ? "world" : "welcome");
+  const [game, setGame] = useState(null);
+  const [showAq, setShowAq] = useState(false);
+  const [showParent, setShowParent] = useState(false);
+  const reward = () => addReward(setState);
+  return (
+    <div className="app">
+      {screen==="welcome" && <Welcome onChild={()=>setScreen(state.setupDone?"world":"wizard")} onParent={()=>setScreen("wizard")} />}
+      {screen==="wizard" && <Wizard state={state} setState={setState} onDone={()=>setScreen("world")} />}
+      {screen==="world" && <World state={state} setState={setState}
+        openGame={setGame} openAquarium={()=>setShowAq(true)} openParent={()=>setShowParent(true)} />}
+
+      {game==="feed" && <FeedGame state={state} onReward={reward} onClose={()=>setGame(null)} />}
+      {game==="bubble" && <BubbleGame state={state} onReward={reward} onClose={()=>setGame(null)} />}
+      {game==="find" && <FindGame state={state} onReward={reward} onClose={()=>setGame(null)} />}
+      {game==="name" && <NameGame state={state} onReward={reward} onClose={()=>setGame(null)} />}
+
+      {showAq && <Aquarium state={state} onClose={()=>setShowAq(false)} />}
+      {showParent && <ParentDash state={state} setState={setState} onClose={()=>setShowParent(false)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
