@@ -285,32 +285,46 @@ function useSpeech() {
 
   const listen = useCallback((onResult, onEnd) => {
     if (!SR) { setAvailable(false); onEnd && onEnd(null); return; }
-    try {
-      const r = new SR(); recRef.current = r;
-      r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3; r.continuous = false;
-      let got = null;
-      r.onresult = e => {
-        got = e.results[0][0].transcript.toLowerCase().trim();
-        setMicError(null);
-        onResult(got);
-      };
-      r.onend = () => onEnd && onEnd(got);
-      r.onerror = (e) => {
-        const msg = e.error;
-        if (msg === 'not-allowed' || msg === 'service-not-allowed') {
-          setAvailable(false);
-          setMicError('Microphone permission denied. Please allow microphone access in your browser settings.');
-        } else if (msg === 'no-speech') {
-          setMicError(null); // treated as silence — normal
-        } else if (msg === 'network') {
-          setMicError('Speech recognition needs an internet connection.');
-        } else {
-          setMicError('Microphone error: ' + msg);
-        }
+
+    // Stop TTS first — browser blocks mic while audio is playing
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+    const startRec = () => {
+      try {
+        const r = new SR(); recRef.current = r;
+        r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3; r.continuous = false;
+        let got = null;
+        r.onresult = e => {
+          got = Array.from(e.results[0]).map(alt => alt.transcript).join(' ').toLowerCase().trim();
+          setMicError(null);
+          onResult(got);
+        };
+        r.onend = () => onEnd && onEnd(got);
+        r.onerror = (e) => {
+          const msg = e.error;
+          if (msg === 'not-allowed' || msg === 'service-not-allowed') {
+            setAvailable(false);
+            setMicError('Microphone permission denied. Tap your browser address bar and allow microphone access, then reload.');
+          } else if (msg === 'no-speech') {
+            setMicError(null);
+          } else if (msg === 'network') {
+            setMicError('Speech recognition needs an internet connection (Chrome requires https://).');
+          } else if (msg === 'audio-capture') {
+            setMicError('No microphone found. Please connect a microphone and try again.');
+          } else {
+            setMicError('Microphone error: ' + msg + '. Try reloading the page.');
+          }
+          onEnd && onEnd(null);
+        };
+        r.start();
+      } catch(e) {
+        setMicError('Could not start microphone: ' + (e.message || e));
         onEnd && onEnd(null);
-      };
-      r.start();
-    } catch(e) { onEnd && onEnd(null); }
+      }
+    };
+
+    // 200ms gap lets the audio pipeline release after TTS cancel
+    setTimeout(startRec, 200);
   }, [SR]);
 
   const stop = useCallback(() => { try { recRef.current && recRef.current.stop(); } catch(e){} }, []);
@@ -546,9 +560,13 @@ function World({ state, setState, openGame, openAquarium, openParent }) {
 
   function onMic() {
     if (pecs) return;
-    playListening();
-    setMood("LISTENING"); setText("I'm listening...");
-    speech.listen(()=>{}, result => evaluate(result));
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setMood("LISTENING"); setText("Get ready...");
+    setTimeout(() => {
+      playListening();
+      setText("I'm listening... go ahead!");
+      speech.listen(()=>{}, result => evaluate(result));
+    }, 220);
   }
 
   const happy = mood === "CELEBRATING";
@@ -633,7 +651,7 @@ function FeedGame({ state, onReward, onClose }) {
       }, 1100);
     } else { playTap(); celebrateInline(setMsg, "Try again! 💙"); speak("Try again! You can do it!"); }
   }
-  function mic(){ playListening(); speech.listen(()=>{}, r=>pick(r||"")); }
+  function mic(){ if(window.speechSynthesis)window.speechSynthesis.cancel(); setTimeout(()=>{ playListening(); speech.listen(()=>{}, r=>pick(r||"")); },220); }
   return (
     <GameShell title="🐬 Feed the Dolphin" onClose={onClose}>
       <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 3</div>
@@ -662,7 +680,7 @@ function BubbleGame({ state, onReward, onClose }) {
       setTimeout(()=>{ if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ All popped! ⭐"); speak("Amazing! You popped all the bubbles!"); setTimeout(onClose,1500);} },1000);
     } else { playTap(); celebrateInline(setMsg,"Try the "+cur.w+"! 💙"); speak("Try the "+cur.w+" bubble!"); }
   }
-  function mic(){ playListening(); speech.listen(()=>{}, r=>{ const said=(r||""); const hit=items.find(i=>said.includes(i.w)); pop(hit?hit.w:said); }); }
+  function mic(){ if(window.speechSynthesis)window.speechSynthesis.cancel(); setTimeout(()=>{ playListening(); speech.listen(()=>{}, r=>{ const said=(r||""); const hit=items.find(i=>said.includes(i.w)); pop(hit?hit.w:said); }); },220); }
   return (
     <GameShell title="🫧 Bubble Pop" onClose={onClose}>
       <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 5</div>
@@ -698,7 +716,7 @@ function FindGame({ state, onReward, onClose }) {
       },1100);
     } else { playTap(); celebrateInline(setMsg,"Look somewhere else! 💙"); speak("Not there! Look somewhere else!"); }
   }
-  function mic(){ playListening(); speech.listen(()=>{}, r=>{ const s=spots.findIndex(x=>(r||"").includes(x.w)); if(s>=0)pick(s); else { playTap(); celebrateInline(setMsg,"Try again! 💙"); } }); }
+  function mic(){ if(window.speechSynthesis)window.speechSynthesis.cancel(); setTimeout(()=>{ playListening(); speech.listen(()=>{}, r=>{ const s=spots.findIndex(x=>(r||"").includes(x.w)); if(s>=0)pick(s); else { playTap(); celebrateInline(setMsg,"Try again! 💙"); } }); },220); }
   return (
     <GameShell title="🐢 Find the Turtle" onClose={onClose}>
       <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 3</div>
@@ -738,7 +756,7 @@ function NameGame({ state, onReward, onClose }) {
       },1900);
     } else { playTap(); celebrateInline(setMsg,"Try again! 💙"); speak("Try again! You can do it!"); }
   }
-  function mic(){ playListening(); speech.listen(()=>{}, r=>{ const said=(r||""); const hit=animals.find(a=>said.includes(a.w)); pick(hit?hit.w:said); }); }
+  function mic(){ if(window.speechSynthesis)window.speechSynthesis.cancel(); setTimeout(()=>{ playListening(); speech.listen(()=>{}, r=>{ const said=(r||""); const hit=animals.find(a=>said.includes(a.w)); pick(hit?hit.w:said); }); },220); }
   return (
     <GameShell title="🦑 Name the Animal" onClose={onClose}>
       <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 5</div>
