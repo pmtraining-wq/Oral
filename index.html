@@ -1,1672 +1,1601 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Oral — Speech & Language Companion</title>
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>🌊 Oral — Underwater Speech Companion</title>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',Arial,sans-serif;background:#1a1a2e;color:#fff;overflow:hidden;height:100vh;width:100vw}
-  #root{height:100vh;width:100vw}
-  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  .btn{padding:14px 32px;border:none;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px}
-  .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 20px rgba(102,126,234,.5)}
-  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(102,126,234,.7)}
-  .btn-green{background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff}
-  .btn-green:hover{transform:translateY(-2px)}
-  .btn-orange{background:linear-gradient(135deg,#f7971e,#ffd200);color:#333}
-  .btn-sm{padding:8px 20px;font-size:.9rem}
-  canvas{display:block}
+:root {
+  --deep: #061428;
+  --ocean: #0a3d6b;
+  --mid: #0d5c9c;
+  --teal: #00b4b4;
+  --light: #7fd7e8;
+  --foam: #c8f0f8;
+  --gold: #ffd700;
+  --coral: #ff6b6b;
+  --cream: #fff8f0;
+  --success: #22c55e;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; height: 100%; width: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--deep);
+  color: var(--cream);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+#root, .app-root { height: 100vh; width: 100vw; position: relative; overflow: hidden; }
+#bgCanvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.layer { position: relative; z-index: 2; height: 100vh; width: 100vw; overflow-y: auto; }
 
-  /* Welcome */
-  .welcome-bg{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
-  .welcome-title{font-size:4rem;font-weight:900;background:linear-gradient(135deg,#667eea,#764ba2,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
-  .welcome-sub{font-size:1.2rem;color:#a0a0c0;text-align:center;max-width:500px;line-height:1.6}
-  .welcome-fish{font-size:3rem;animation:fishsway 2s ease-in-out infinite}
-  @keyframes fishsway{0%,100%{transform:translateX(-10px) rotate(-5deg)}50%{transform:translateX(10px) rotate(5deg)}}
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+.btn {
+  min-height: 56px; border-radius: 28px; padding: 14px 28px;
+  font-size: 20px; font-weight: 700; color: var(--cream);
+  background: linear-gradient(135deg, var(--teal), var(--mid));
+  box-shadow: 0 6px 22px rgba(0,180,180,.35), inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn:active { transform: scale(.95); }
+.btn.gold { background: linear-gradient(135deg, var(--gold), #ff9d00); color: #3a2400; }
+.btn.coral { background: linear-gradient(135deg, var(--coral), #d83a3a); }
+.btn.ghost { background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 2px rgba(255,255,255,.25); }
+.btn.success { background: linear-gradient(135deg, var(--success), #15803d); }
+.btn:disabled { opacity: .5; }
 
-  /* Wizard */
-  .wizard-wrap{background:linear-gradient(135deg,#0f0c29,#302b63);width:100%;height:100%;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:20px}
-  .wizard-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:40px;max-width:640px;width:100%}
-  .wizard-title{font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:8px;background:linear-gradient(135deg,#667eea,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .wizard-q{font-size:1.1rem;color:#c0c0e0;text-align:center;margin-bottom:24px;line-height:1.5}
-  .wizard-option{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:12px;border:2px solid rgba(255,255,255,.1);margin-bottom:10px;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.03)}
-  .wizard-option:hover,.wizard-option.selected{border-color:#667eea;background:rgba(102,126,234,.15)}
-  .wizard-option-num{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0}
-  .wizard-option-text{font-size:1rem;color:#e0e0f0}
-  .level-confirm{text-align:center;margin-top:24px;padding:24px;background:rgba(255,255,255,.05);border-radius:16px;border:1px solid rgba(102,126,234,.3)}
-  .level-name{font-size:1.8rem;font-weight:800;color:#f093fb}
-  .level-desc{font-size:1rem;color:#a0a0c0;margin:8px 0 16px}
-  .level-adj{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px}
-  .adj-btn{width:40px;height:40px;border-radius:50%;border:2px solid #667eea;background:transparent;color:#667eea;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;transition:all .2s}
-  .adj-btn:hover{background:#667eea;color:#fff}
-  .adj-num{font-size:2rem;font-weight:900;color:#fff;min-width:48px;text-align:center}
+.center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.glow-title {
+  font-size: clamp(48px, 12vw, 96px); font-weight: 900; margin: 0;
+  background: linear-gradient(180deg, var(--foam), var(--light), var(--teal));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 40px rgba(0,180,180,.6); letter-spacing: -2px;
+}
+.tagline { font-size: clamp(16px,4vw,22px); color: var(--light); text-align: center; max-width: 600px; margin: 18px 0 36px; line-height: 1.4; }
 
-  /* Talk UI overlay */
-  .talk-overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column}
-  .talk-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.4);pointer-events:all;backdrop-filter:blur(6px)}
-  .stars-bar{flex:1;max-width:400px;margin:0 auto}
-  .stars-label{font-size:.8rem;color:#ffd200;margin-bottom:4px;text-align:center}
-  .stars-track{height:12px;background:rgba(255,255,255,.15);border-radius:6px;overflow:hidden}
-  .stars-fill{height:100%;background:linear-gradient(90deg,#ffd200,#ff6b35);border-radius:6px;transition:width .4s}
-  .star-count{font-size:.85rem;color:#ffd200;text-align:center;margin-top:2px}
-  .talk-bottom{margin-top:auto;padding:16px;background:rgba(0,0,0,.5);pointer-events:all;backdrop-filter:blur(6px)}
-  .input-row{display:flex;gap:10px;align-items:center;max-width:700px;margin:0 auto}
-  .text-input{flex:1;padding:12px 18px;border-radius:50px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:1rem;outline:none}
-  .text-input:focus{border-color:#667eea}
-  .text-input::placeholder{color:rgba(255,255,255,.4)}
-  .mic-btn{width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;transition:all .2s;flex-shrink:0}
-  .mic-idle{background:linear-gradient(135deg,#667eea,#764ba2)}
-  .mic-active{background:linear-gradient(135deg,#ff4444,#ff0000);animation:pulse .8s ease-in-out infinite}
-  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
-  .mic-listening-label{font-size:.75rem;color:#ff6666;text-align:center;margin-top:4px;min-height:16px}
-  .send-btn{width:52px;height:52px;border-radius:50%;border:none;background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff;font-size:1.4rem;cursor:pointer;flex-shrink:0;transition:all .2s}
-  .send-btn:hover{transform:scale(1.05)}
-  .icon-btn{background:transparent;border:none;color:#fff;font-size:1.3rem;cursor:pointer;padding:6px;border-radius:8px;transition:all .2s;opacity:.8}
-  .icon-btn:hover{opacity:1;background:rgba(255,255,255,.1)}
-  .level-badge{font-size:.75rem;color:#a0a0c0;text-align:center;padding:4px 10px;background:rgba(255,255,255,.08);border-radius:20px;white-space:nowrap}
-  .type-toggle{font-size:.7rem;color:#a0a0c0;cursor:pointer;text-decoration:underline;text-align:center;margin-top:4px;background:transparent;border:none;color:#667eea}
+.card {
+  background: rgba(13,92,156,.30); backdrop-filter: blur(10px);
+  border: 1px solid rgba(127,215,232,.25); border-radius: 20px;
+  padding: 18px; box-shadow: 0 8px 28px rgba(0,0,0,.3);
+}
+.card.solid { background: rgba(10,40,75,.92); }
 
-  /* Fish game */
-  .fish-overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column}
-  .fish-top{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(0,0,20,.6);pointer-events:all;backdrop-filter:blur(6px)}
-  .fish-progress-wrap{flex:1;max-width:400px;margin:0 16px}
-  .fish-progress-label{font-size:.85rem;color:#38ef7d;text-align:center;margin-bottom:4px}
-  .fish-track{height:14px;background:rgba(255,255,255,.1);border-radius:7px;overflow:hidden}
-  .fish-fill{height:100%;background:linear-gradient(90deg,#11998e,#38ef7d);border-radius:7px;transition:width .4s}
-  .fish-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,50,.7);padding:10px 24px;border-radius:30px;font-size:.9rem;color:#a0d0ff;pointer-events:none;backdrop-filter:blur(4px)}
+.input, .num-input {
+  width: 100%; font-size: 20px; padding: 14px 18px; border-radius: 16px;
+  border: 2px solid rgba(127,215,232,.4); background: rgba(6,20,40,.6);
+  color: var(--cream); outline: none; font-family: inherit;
+}
+.input:focus { border-color: var(--teal); }
+label.fld { display: block; margin-bottom: 22px; }
+label.fld > span { display: block; font-size: 16px; color: var(--light); margin-bottom: 8px; font-weight: 600; }
 
-  /* Celebration */
-  .celebration{position:absolute;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:100}
-  .celebration-emoji{font-size:5rem;animation:bounce .6s ease-in-out infinite alternate}
-  @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-20px)}}
-  .celebration-title{font-size:2.2rem;font-weight:900;background:linear-gradient(135deg,#ffd200,#ff6b35,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
-  .confetti-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-  .confetti-piece{position:absolute;width:10px;height:10px;border-radius:2px;animation:confettiFall linear forwards}
-  @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+.choice-grid { display: grid; gap: 12px; }
+.choice {
+  background: rgba(13,92,156,.35); border: 2px solid transparent; border-radius: 18px;
+  padding: 16px; font-size: 18px; color: var(--cream); text-align: left; font-weight: 600;
+  transition: all .15s ease; min-height: 56px; display: flex; align-items: center; gap: 12px;
+}
+.choice:active { transform: scale(.97); }
+.choice.sel { border-color: var(--gold); background: rgba(0,180,180,.35); box-shadow: 0 0 0 3px rgba(255,215,0,.3); }
+.emoji-card {
+  background: rgba(13,92,156,.35); border: 3px solid transparent; border-radius: 20px;
+  padding: 14px 8px; text-align: center; transition: all .15s ease; min-height: 90px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+}
+.emoji-card .e { font-size: 40px; line-height: 1; }
+.emoji-card .l { font-size: 14px; color: var(--foam); font-weight: 600; }
+.emoji-card.sel { border-color: var(--gold); background: rgba(0,180,180,.4); transform: scale(1.04); }
+.emoji-card:active { transform: scale(.96); }
 
-  /* Dashboard */
-  .dash-wrap{background:linear-gradient(135deg,#0f0c29,#1a0533);width:100%;height:100%;overflow-y:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;padding-top:30px}
-  .dash-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px;max-width:700px;width:100%}
-  .dash-title{font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:24px;background:linear-gradient(135deg,#667eea,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .dash-section{margin-bottom:24px}
-  .dash-section-title{font-size:.9rem;text-transform:uppercase;letter-spacing:1px;color:#667eea;margin-bottom:12px;border-bottom:1px solid rgba(102,126,234,.3);padding-bottom:6px}
-  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-  .stat-card{background:rgba(255,255,255,.05);border-radius:12px;padding:16px;text-align:center;border:1px solid rgba(255,255,255,.08)}
-  .stat-val{font-size:2rem;font-weight:900;color:#ffd200}
-  .stat-label{font-size:.8rem;color:#a0a0c0;margin-top:4px}
-  .level-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-  .level-row-name{font-size:.85rem;color:#c0c0e0;width:140px;flex-shrink:0}
-  .level-row-track{flex:1;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden}
-  .level-row-fill{height:100%;background:linear-gradient(90deg,#667eea,#f093fb);border-radius:4px}
-  .level-row-status{font-size:.75rem;color:#a0a0c0;width:60px;text-align:right;flex-shrink:0}
-  .pin-screen{background:rgba(0,0,0,.9);position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
-  .pin-title{font-size:1.4rem;font-weight:700;color:#667eea}
-  .pin-input{padding:12px 24px;border-radius:12px;border:2px solid #667eea;background:rgba(255,255,255,.1);color:#fff;font-size:1.4rem;text-align:center;letter-spacing:6px;width:180px;outline:none}
-  .pin-error{color:#ff6666;font-size:.9rem}
-  .info-box{background:rgba(102,126,234,.1);border:1px solid rgba(102,126,234,.3);border-radius:12px;padding:16px;font-size:.85rem;color:#c0c0e0;line-height:1.6}
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(127,215,232,.15); }
+.toggle { width: 58px; height: 32px; border-radius: 18px; background: rgba(6,20,40,.7); position: relative; transition: background .2s; flex: 0 0 auto; }
+.toggle.on { background: var(--success); }
+.toggle .knob { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; transition: left .2s; }
+.toggle.on .knob { left: 29px; }
 
-  /* Star burst */
-  .star-burst{position:absolute;pointer-events:none;font-size:2rem;animation:starPop .8s forwards}
-  @keyframes starPop{0%{transform:scale(0) translateY(0);opacity:1}50%{transform:scale(1.4) translateY(-30px);opacity:1}100%{transform:scale(0.8) translateY(-60px);opacity:0}}
+.speech-bubble {
+  background: var(--cream); color: #0a2540; border-radius: 24px; padding: 18px 22px;
+  font-size: clamp(18px,4.5vw,26px); font-weight: 700; line-height: 1.3; max-width: 640px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35); position: relative; text-align: center;
+}
+.speech-bubble::after {
+  content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+  border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 18px solid var(--cream);
+}
+.companion { font-size: 120px; line-height: 1; filter: drop-shadow(0 10px 24px rgba(0,0,0,.5)); animation: bob 3.2s ease-in-out infinite; }
+@keyframes bob { 0%,100%{ transform: translateY(0) rotate(-2deg);} 50%{ transform: translateY(-18px) rotate(2deg);} }
+.no-anim .companion { animation: none; }
 
-  /* API key prompt */
-  .apikey-screen{background:linear-gradient(135deg,#0f0c29,#302b63);position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:30px}
-  .apikey-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:32px;max-width:500px;width:100%;text-align:center}
-  .apikey-title{font-size:1.5rem;font-weight:800;color:#f093fb;margin-bottom:12px}
-  .apikey-input{width:100%;padding:12px 16px;border-radius:10px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:.95rem;outline:none;margin-bottom:16px}
-  .apikey-input:focus{border-color:#667eea}
-  .apikey-note{font-size:.8rem;color:#808090;line-height:1.5;margin-top:12px}
+.badge { background: rgba(6,20,40,.7); border: 1px solid rgba(127,215,232,.4); border-radius: 20px; padding: 8px 16px; font-size: 16px; font-weight: 700; color: var(--foam); }
+.badge.warn { background: rgba(255,107,107,.35); border-color: var(--coral); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
+
+.topbar { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; z-index: 6; gap: 8px; }
+.navbar {
+  position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 6px; padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+  background: rgba(6,20,40,.85); backdrop-filter: blur(12px); z-index: 6; overflow-x: auto; justify-content: flex-start;
+}
+.nav-btn { flex: 0 0 auto; min-width: 64px; min-height: 56px; border-radius: 16px; background: rgba(13,92,156,.4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--foam); font-size: 11px; font-weight: 700; padding: 4px; }
+.nav-btn .ne { font-size: 24px; }
+.nav-btn.active { background: var(--teal); }
+
+.mic-btn {
+  width: 130px; height: 130px; border-radius: 50%; font-size: 56px;
+  background: radial-gradient(circle at 35% 30%, var(--coral), #c0392b);
+  box-shadow: 0 0 0 8px rgba(255,107,107,.2), 0 12px 30px rgba(0,0,0,.4); color: #fff; border: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.mic-btn.listening { animation: micpulse 1.1s infinite; background: radial-gradient(circle at 35% 30%, var(--gold), #ff9d00); }
+@keyframes micpulse { 0%,100%{ box-shadow: 0 0 0 8px rgba(255,215,0,.25), 0 12px 30px rgba(0,0,0,.4);} 50%{ box-shadow: 0 0 0 26px rgba(255,215,0,0), 0 12px 30px rgba(0,0,0,.4);} }
+
+.waveform { display: flex; gap: 5px; align-items: flex-end; height: 40px; }
+.waveform span { width: 6px; background: var(--gold); border-radius: 3px; animation: wave .9s ease-in-out infinite; }
+@keyframes wave { 0%,100%{ height: 8px;} 50%{ height: 38px;} }
+
+.confetti-piece { position: fixed; width: 12px; height: 12px; z-index: 50; pointer-events: none; animation: fall 1.6s ease-in forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+.pecs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 480px; }
+.pecs-card { background: var(--cream); color: #0a2540; border-radius: 16px; padding: 12px 6px; text-align: center; font-weight: 800; min-height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.pecs-card .pe { font-size: 38px; }
+.pecs-card .pl { font-size: 14px; }
+.pecs-card:active { transform: scale(.95); }
+
+.tabbar { display: flex; gap: 6px; overflow-x: auto; padding: 6px; background: rgba(6,20,40,.6); border-radius: 16px; margin-bottom: 16px; }
+.tab { flex: 1 0 auto; padding: 10px 16px; border-radius: 12px; background: transparent; color: var(--light); font-weight: 700; font-size: 15px; white-space: nowrap; }
+.tab.active { background: var(--teal); color: #fff; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 12px; }
+.stat { background: rgba(6,20,40,.5); border-radius: 16px; padding: 14px; text-align: center; }
+.stat .v { font-size: 30px; font-weight: 900; color: var(--gold); }
+.stat .k { font-size: 13px; color: var(--light); margin-top: 4px; }
+
+.pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--foam); }
+.pin-dot.f { background: var(--gold); border-color: var(--gold); }
+.keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; max-width: 280px; margin: 0 auto; }
+.key { min-height: 64px; border-radius: 16px; font-size: 26px; font-weight: 800; background: rgba(13,92,156,.4); color: var(--cream); }
+
+.aq-card { background: rgba(13,92,156,.3); border: 1px solid rgba(127,215,232,.3); border-radius: 18px; padding: 14px; text-align: center; }
+.aq-card .ae { font-size: 48px; }
+.aq-card .an { font-weight: 800; margin-top: 6px; }
+.aq-card .ad { font-size: 12px; color: var(--light); margin-top: 4px; }
+.zone-banner { background: linear-gradient(135deg, rgba(0,180,180,.4), rgba(13,92,156,.4)); border-radius: 14px; padding: 10px 16px; font-weight: 800; margin: 16px 0 10px; }
+.zone-banner.locked { opacity: .45; }
+
+.progress-bar { height: 14px; border-radius: 10px; background: rgba(6,20,40,.6); overflow: hidden; }
+.progress-bar > div { height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold)); transition: width .4s; }
+
+.timeline { display: flex; gap: 4px; }
+.timeline .step { flex: 1; text-align: center; }
+.timeline .dot { width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; font-weight: 800; background: rgba(6,20,40,.6); border: 2px solid rgba(127,215,232,.3); }
+.timeline .dot.done { background: var(--success); border-color: var(--success); }
+.timeline .dot.cur { background: var(--gold); border-color: var(--gold); color: #3a2400; }
+.timeline .lbl { font-size: 10px; color: var(--light); }
+
+.tip-card { background: rgba(13,92,156,.3); border-left: 4px solid var(--gold); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.tip-card .tt { font-weight: 800; font-size: 17px; margin-bottom: 6px; }
+.tip-card .tb { font-size: 15px; color: var(--foam); line-height: 1.4; }
+
+.scroll-pad { padding: 20px 16px 100px; max-width: 760px; margin: 0 auto; }
+.mic-error { background: rgba(255,107,107,.25); border: 1px solid var(--coral); border-radius: 14px; padding: 12px; font-size: 14px; margin-top: 12px; max-width: 480px; }
+
+.high-contrast { background: #000a1a !important; }
+.high-contrast .card, .high-contrast .choice, .high-contrast .emoji-card, .high-contrast .stat, .high-contrast .aq-card, .high-contrast .tip-card { background: #001233 !important; backdrop-filter: none !important; }
+.high-contrast .speech-bubble { background: #fff !important; }
+.high-contrast { font-size: 1.08em; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(127,215,232,.3); border-radius: 4px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.muted { color: var(--light); font-size: 14px; }
+h2.sect { font-size: 22px; margin: 18px 0 10px; color: var(--foam); }
+h3.sub { font-size: 17px; margin: 14px 0 8px; color: var(--light); }
+textarea.input { min-height: 120px; resize: vertical; font-size: 15px; }
+table.rep { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.rep th { color: var(--light); text-align: center; padding: 4px; }
+table.rep td { padding: 4px; border-top: 1px solid rgba(127,215,232,.15); }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root">
+  <div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#061428;color:#7fd7e8;font-family:sans-serif;gap:16px">
+    <div style="font-size:3rem">🌊</div>
+    <div style="font-size:1.4rem;font-weight:800">Oral</div>
+    <div style="font-size:1rem;opacity:.7">Loading…</div>
+    <div id="load-err" style="display:none;color:#ff6b6b;font-size:.9rem;max-width:320px;text-align:center;margin-top:8px"></div>
+  </div>
+</div>
+<script>
+  window.addEventListener('error', function(e) {
+    var el = document.getElementById('load-err');
+    if (el) { el.style.display='block'; el.textContent='JS Error: ' + (e.message||'unknown') + ' (line '+e.lineno+')'; }
+  });
+  window.addEventListener('unhandledrejection', function(e) {
+    var el = document.getElementById('load-err');
+    if (el) { el.style.display='block'; el.textContent='Error: ' + (e.reason||'unknown'); }
+  });
+  setTimeout(function(){
+    var el = document.getElementById('load-err');
+    var root = document.getElementById('root');
+    if (el && root && root.querySelector('canvas') === null) {
+      el.style.display='block';
+      el.textContent='App took too long to load. Check internet connection and reload.';
+    }
+  }, 12000);
+</script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-<script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
-
-// ── Storage ──────────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'oral_v2_state';
-function loadState() {
+/* ============================ AUDIO ============================ */
+let QUIET = false, NO_SUDDEN = false;
+function playTone(freq, type='sine', dur=0.18, vol=0.15) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch(e) {}
-  return null;
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+    osc.start(); osc.stop(ctx.currentTime+dur);
+    setTimeout(()=>ctx.close(), dur*1000+200);
+  } catch(e){}
 }
-function saveState(s) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {}
+function playCelebration(){ if(QUIET||NO_SUDDEN) return; [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.25,0.13),i*90)); }
+function playPop(){ if(QUIET) return; playTone(880,'sine',0.1,0.1); }
+function playTap(){ if(QUIET) return; playTone(660,'triangle',0.08,0.09); }
+function playListening(){ if(QUIET) return; playTone(440,'sine',0.12,0.07); setTimeout(()=>playTone(550,'sine',0.12,0.07),130); }
+function playReward(){ if(QUIET||NO_SUDDEN) return; [784,1047,1319].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.3,0.12),i*120)); }
+
+/* ============================ TTS ============================ */
+function speak(text, opts={}) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(String(text).replace(/[\u{1F300}-\u{1FAFF}]|[☀-➿]|[︀-️]/gu,''));
+  u.rate = opts.rate||0.88; u.pitch = opts.pitch||1.1; u.volume = (QUIET?0.5:1)*(opts.volume||1);
+  const voices = window.speechSynthesis.getVoices();
+  let v;
+  if (opts.male) v = voices.find(v=>/en[-_](GB|US|AU)/i.test(v.lang)&&/male|daniel|alex|fred|david|james/i.test(v.name));
+  if (!v) v = voices.find(v=>/en[-_](GB|US|AU)/i.test(v.lang)&&/female|samantha|karen|victoria|moira|tessa|fiona|kate/i.test(v.name));
+  if (!v) v = voices.find(v=>/en[-_]/i.test(v.lang));
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
+}
+if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined)
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+/* ============================ SPEECH RECOGNITION ============================ */
+function useSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recRef = useRef(null);
+  const [available, setAvailable] = useState(!!SR);
+  const [micError, setMicError] = useState(null);
+  const listen = useCallback((onResult, onEnd) => {
+    if (!SR) { setAvailable(false); onEnd && onEnd(null); return; }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setTimeout(() => {
+      try {
+        const r = new SR(); recRef.current = r;
+        r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3; r.continuous = false;
+        let got = null;
+        r.onresult = e => { got = Array.from(e.results[0]).map(a=>a.transcript).join(' ').toLowerCase().trim(); setMicError(null); onResult(got); };
+        r.onend = () => onEnd && onEnd(got);
+        r.onerror = e => {
+          const msg = e.error;
+          if (msg==='not-allowed'||msg==='service-not-allowed') { setAvailable(false); setMicError('Microphone permission denied. Allow mic access in browser settings and reload.'); }
+          else if (msg==='network') setMicError('Speech recognition needs https:// or localhost.');
+          else if (msg==='audio-capture') setMicError('No microphone found.');
+          else if (msg!=='no-speech') setMicError('Mic error: '+msg);
+          onEnd && onEnd(null);
+        };
+        r.start();
+      } catch(e) { setMicError('Could not start mic: '+(e.message||e)); onEnd && onEnd(null); }
+    }, 200);
+  }, [SR]);
+  const stop = useCallback(() => { try { recRef.current && recRef.current.stop(); } catch(e){} }, []);
+  return { available, listen, stop, micError, setMicError };
 }
 
-// ── Level data ────────────────────────────────────────────────────────────────
-const LEVELS = [
-  { num:1,  name:'First Sounds',   emoji:'🔊', stars:4,  fish:3,  desc:'Any vocalisation — even a sound is celebrated!' },
-  { num:2,  name:'First Word',     emoji:'💬', stars:5,  fish:3,  desc:'A single recognisable word like "hi" or "yes".' },
-  { num:3,  name:'Two Words',      emoji:'🗣️', stars:5,  fish:3,  desc:'Combine two words like "blue fish" or "I like".' },
-  { num:4,  name:'Short Phrase',   emoji:'📢', stars:6,  fish:4,  desc:'3–4 word phrases like "I like fish".' },
-  { num:5,  name:'Simple Sentence',emoji:'💡', stars:7,  fish:4,  desc:'5–7 word complete sentences.' },
-  { num:6,  name:'Full Sentence',  emoji:'✨', stars:8,  fish:4,  desc:'8–10 word detailed sentences.' },
-  { num:7,  name:'Two Sentences',  emoji:'🌟', stars:9,  fish:5,  desc:'Two connected ideas joined with "and then" or "because".' },
-  { num:8,  name:'Short Story',    emoji:'📖', stars:10, fish:5,  desc:'3–4 sentence narratives with a beginning and end.' },
-  { num:9,  name:'Extended Chat',  emoji:'🎤', stars:11, fish:5,  desc:'Fluent multi-turn back-and-forth conversation.' },
-  { num:10, name:'Oral Master',    emoji:'🏆', stars:12, fish:6,  desc:'Full natural conversation on any topic.' },
+/* ============================ DATA ============================ */
+const WORD_BANKS = {
+  1: [
+    {word:"fish",emoji:"🐟"},{word:"turtle",emoji:"🐢"},{word:"whale",emoji:"🐋"},
+    {word:"blue",emoji:"💙"},{word:"big",emoji:"⬆️"},{word:"more",emoji:"➕"},
+    {word:"yes",emoji:"✅"},{word:"hello",emoji:"👋"},{word:"bye",emoji:"👋"},
+    {word:"help",emoji:"🤝"},{word:"swim",emoji:"🏊"},{word:"eat",emoji:"🍽️"},
+    {word:"red",emoji:"❤️"},{word:"green",emoji:"💚"},{word:"happy",emoji:"😊"},
+  ],
+  2: [
+    {word:"blue fish",emoji:"🐟"},{word:"big whale",emoji:"🐋"},{word:"more bubbles",emoji:"🫧"},
+    {word:"swim fast",emoji:"🏊"},{word:"happy turtle",emoji:"🐢"},{word:"red coral",emoji:"🪸"},
+    {word:"want fish",emoji:"🐟"},{word:"found it",emoji:"🎉"},{word:"help me",emoji:"🤝"},
+  ],
+  3: [
+    {word:"what is this",emoji:"❓"},{word:"can I see",emoji:"👀"},{word:"where is it",emoji:"📍"},
+    {word:"what colour",emoji:"🎨"},{word:"how many",emoji:"🔢"},{word:"who is that",emoji:"👤"},
+  ],
+  4: [
+    {word:"the fish is blue",emoji:"🐟"},{word:"I found a treasure",emoji:"💎"},
+    {word:"the turtle is hiding",emoji:"🐢"},{word:"I want to swim",emoji:"🏊"},
+  ],
+  5: [
+    {word:"tell me a story",emoji:"📖"},{word:"what happened next",emoji:"❓"},
+  ],
+  6: [
+    {word:"once upon a time",emoji:"📖"},{word:"and then",emoji:"➡️"},
+  ],
+};
+
+const REWARD_POOL = [
+  {type:"jellyfish",emoji:"🪼",name:"Glow the Jellyfish",desc:"Lights up the darkest deep with a gentle glow."},
+  {type:"shark",emoji:"🦈",name:"Chomper the Shark",desc:"A friendly shark with the biggest smile in the sea."},
+  {type:"crab",emoji:"🦀",name:"Pinch the Crab",desc:"Scuttles sideways and loves to dance."},
+  {type:"octopus",emoji:"🐙",name:"Ollie the Octopus",desc:"Has eight arms for eight hugs at once."},
+  {type:"whale",emoji:"🐋",name:"Bloo the Whale",desc:"Sings the most beautiful ocean songs."},
+  {type:"dolphin",emoji:"🐬",name:"Splash the Dolphin",desc:"Leaps high and laughs in clicks and whistles."},
+  {type:"starfish",emoji:"⭐",name:"Twinkle the Starfish",desc:"A star that fell into the sea and stayed."},
+  {type:"pufferfish",emoji:"🐡",name:"Puffy the Pufferfish",desc:"Puffs up like a balloon when surprised."},
+  {type:"seal",emoji:"🦭",name:"Sandy the Seal",desc:"Loves sunbathing on warm rocks."},
+  {type:"squid",emoji:"🦑",name:"Inky the Squid",desc:"Paints the water with playful ink swirls."},
+  {type:"fish",emoji:"🐟",name:"Bubbles the Fish",desc:"Blows the roundest bubbles in the reef."},
+  {type:"shrimp",emoji:"🦐",name:"Shrimpy",desc:"Tiny but the bravest of them all."},
+  {type:"shell",emoji:"🐚",name:"Pearl the Shell",desc:"Holds a shiny secret pearl inside."},
+  {type:"fish2",emoji:"🐠",name:"Sunny the Reef Fish",desc:"Bright as sunshine on the coral."},
+  {type:"whale2",emoji:"🐳",name:"Misty the Baby Whale",desc:"Spouts a fountain of happy mist."},
+  {type:"snail",emoji:"🐌",name:"Coral the Sea Snail",desc:"Slow and steady, never in a hurry."},
+  {type:"jelly2",emoji:"🎐",name:"Drift the Jelly",desc:"Floats wherever the current goes."},
+  {type:"penguin",emoji:"🐧",name:"Pip the Penguin",desc:"Waddles on ice and dives like a torpedo."},
+  {type:"otter",emoji:"🦦",name:"Ripple the Otter",desc:"Floats on its back holding a favourite stone."},
+  {type:"frog",emoji:"🐸",name:"Lily the Lagoon Frog",desc:"Sings by the warm treasure lagoon."},
+  {type:"fish3",emoji:"🎏",name:"Streamer the Koi",desc:"Glides like a ribbon through the water."},
+  {type:"star2",emoji:"🌟",name:"Sparkle the Sea Star",desc:"Glitters in the bioluminescent deep."},
+  {type:"wave",emoji:"🌊",name:"Surfy the Wave Sprite",desc:"A playful spirit of the rolling sea."},
+  {type:"anchor",emoji:"⚓",name:"Captain Anchor",desc:"Guards the sunken treasure chest."},
+  {type:"compass",emoji:"🧭",name:"Finder the Compass Crab",desc:"Always points the way to adventure."},
+  {type:"lobster",emoji:"🦞",name:"Clawdia the Lobster",desc:"Has the fanciest red shell in the reef."},
+  {type:"blowfish",emoji:"🐡",name:"Pop the Pufferball",desc:"Bounces happily along the sea floor."},
+  {type:"seaweed",emoji:"🌿",name:"Sway the Kelp Spirit",desc:"Dances in the kelp forest all day."},
+  {type:"turtle2",emoji:"🐢",name:"Speedy the Sea Turtle",desc:"Older and wiser than the oldest reef."},
+  {type:"mermaid",emoji:"🧜",name:"Marina the Sea Explorer",desc:"Knows every secret of the ocean deep."},
 ];
 
-const WIZARD_OPTIONS = [
-  'No words yet — just sounds or silence',
-  'A few words (1–10 words)',
-  'Several words, trying short phrases',
-  'Short phrases (3–4 words)',
-  'Short sentences (about 5–7 words)',
-  'Full sentences (8 or more words)',
-  'Short back-and-forth conversations',
-  'Longer conversations',
-  'Extended conversations — wants to do more',
-  'Full conversations — advanced practice',
+const ZONES = [
+  {id:"coral_reef", name:"Coral Reef", emoji:"🪸", stage:1},
+  {id:"kelp_forest", name:"Kelp Forest (Calm Zone)", emoji:"🌿", stage:0},
+  {id:"ocean_caves", name:"Ocean Caves", emoji:"🕳️", stage:2},
+  {id:"deep_sea", name:"Deep Sea", emoji:"🌑", stage:4},
+  {id:"treasure_lagoon", name:"Treasure Lagoon", emoji:"💎", stage:5},
 ];
 
-// ── System prompts ────────────────────────────────────────────────────────────
-function buildSystemPrompt(levelNum) {
-  const base = `You are Oral, a friendly 3D animated character who helps children learn to talk in a fun playground.
-You are warm, enthusiastic, patient and gentle. You ALWAYS celebrate every attempt enthusiastically.
-NEVER correct pronunciation. NEVER express disappointment. NEVER rush the child.
-ALWAYS start your response with enthusiasm like "Wonderful!", "Amazing!", "Great job!", "Fantastic!", "Yes!" etc.
+const COMPANIONS = { turtle:"🐢", dolphin:"🐬", octopus:"🐙", whale:"🐋", shark:"🦈", explorer:"🧜" };
+const COMPANION_LIST = [
+  {id:"turtle",emoji:"🐢",label:"Turtle"},{id:"dolphin",emoji:"🐬",label:"Dolphin"},
+  {id:"octopus",emoji:"🐙",label:"Octopus"},{id:"whale",emoji:"🐋",label:"Whale"},
+  {id:"shark",emoji:"🦈",label:"Shark"},{id:"explorer",emoji:"🧜",label:"Sea Explorer"},
+];
 
-SAFEGUARDING: If the child mentions being hurt, scared, or in danger, respond ONLY with: "Please find a grown-up right now! They will help you! 🤗" then gently change the topic.
+const ANIMAL_OPTS = [
+  {k:"turtles",e:"🐢",l:"Turtles"},{k:"dolphins",e:"🐬",l:"Dolphins"},{k:"octopuses",e:"🐙",l:"Octopuses"},
+  {k:"sharks",e:"🦈",l:"Sharks"},{k:"crabs",e:"🦀",l:"Crabs"},{k:"clownfish",e:"🐠",l:"Clownfish"},
+  {k:"seals",e:"🦭",l:"Seals"},{k:"whales",e:"🐋",l:"Whales"},{k:"squid",e:"🦑",l:"Squid"},
+  {k:"pufferfish",e:"🐡",l:"Pufferfish"},{k:"starfish",e:"⭐",l:"Starfish"},{k:"shrimp",e:"🦐",l:"Shrimp"},
+];
 
-PERMITTED TOPICS: greetings, simple feelings, sea animals, ocean, family first names, school activities (general), friends (first names), food, colours, toys, simple activities, imagination, hobbies.
-PROHIBITED: violence, strangers, personal info (full name, address, school name, phone), scary content, adult topics.
+const STAGES = [
+  {n:1,name:"Single Words",desc:"Saying one word at a time"},
+  {n:2,name:"Two-Word Phrases",desc:"Putting two words together"},
+  {n:3,name:"Simple Questions",desc:"Asking simple questions"},
+  {n:4,name:"Short Conversations",desc:"Having short back-and-forth chats"},
+  {n:5,name:"Full Conversations",desc:"Talking in full conversations"},
+  {n:6,name:"Storytelling & Social",desc:"Telling stories and social play"},
+];
 
-Keep responses SHORT (2-3 sentences max). Always end with ONE simple question or prompt suited to the child's level.`;
+const SCENARIOS = [
+  {title:"Meeting a new child at school", lines:["A new child waves: \"Hi! I'm Sam. What's your name?\"","Sam asks: \"Do you want to play with me?\"","Sam asks: \"What do you like to do?\"","Sam says: \"That's so cool! Let's be friends!\""]},
+  {title:"Asking to join a game", lines:["Children are playing tag in the playground.","One child says: \"We're playing tag!\"","You'd like to join. What could you say?","They smile: \"Sure, you can play with us!\""]},
+  {title:"Talking to a teacher", lines:["Your teacher asks: \"How are you today?\"","Teacher says: \"Can you help me hand out the books?\"","Teacher asks: \"Did you have a good weekend?\"","Teacher smiles: \"Thank you for sharing!\""]},
+  {title:"Ordering food at a café", lines:["The server asks: \"Hello! What would you like?\"","Server asks: \"Would you like a drink with that?\"","Server says: \"That will be just a moment.\"","Server says: \"Here you go, enjoy!\""]},
+  {title:"Explaining feelings", lines:["A grown-up asks: \"How are you feeling?\"","They ask: \"Can you tell me what made you feel that way?\"","They say: \"It's okay to feel like that.\"","They say: \"Thank you for telling me how you feel.\""]},
+  {title:"Describing what happened at school", lines:["A parent asks: \"What did you do at school today?\"","They ask: \"Who did you play with?\"","They ask: \"What was your favourite part?\"","They say: \"That sounds like a wonderful day!\""]},
+  {title:"Handling a change in routine", lines:["Plans changed: \"We can't go to the park today.\"","They explain: \"It's raining, so we'll go tomorrow.\"","They ask: \"Shall we do something fun inside instead?\"","They say: \"You handled that change so well!\""]},
+  {title:"Discussing interests with a peer", lines:["A friend says: \"I love dinosaurs! Do you?\"","They ask: \"What's your favourite thing?\"","They ask: \"Can you tell me more about it?\"","They say: \"Wow, I want to learn about that too!\""]},
+];
 
-  const levelInstructions = [
-    `LEVEL 1 - FIRST SOUNDS: Child may make any sound or no sound. Celebrate ANY vocalisation massively. Ask things like "Can you make any sound for me? Can you say ooh? Ooooh!" Accept any sound as a perfect answer. Use very simple words.`,
-    `LEVEL 2 - FIRST WORD: Target single words like "hi", "hello", "bye", "yes", "no". Celebrate single words hugely. Model: if child says nothing, model the word clearly. Ask "Can you say hello to me? 👋"`,
-    `LEVEL 3 - TWO WORDS: Target 2-word combinations like "blue fish", "big wave", "I like". Ask simple questions with obvious 2-word answers. E.g. "What colour is your favourite fish?"`,
-    `LEVEL 4 - SHORT PHRASE: Target 3-4 word phrases. Ask about favourites. E.g. "What is your favourite food?" Model 3-4 word answers.`,
-    `LEVEL 5 - SIMPLE SENTENCE: Target 5-7 word sentences. Ask open questions. E.g. "Tell me about your favourite animal!" Model complete sentences.`,
-    `LEVEL 6 - FULL SENTENCE: Target 8-10 word sentences with details. Ask about recent events. E.g. "Tell me about something you did today!"`,
-    `LEVEL 7 - TWO SENTENCES: Target 2 connected sentences using "and then", "because", "but". Ask about memorable events. E.g. "Tell me about your best ever day!"`,
-    `LEVEL 8 - SHORT STORY: Target 3-4 sentence narratives with beginning, middle, end. E.g. "Tell me a story about a friendly fish!"`,
-    `LEVEL 9 - EXTENDED CHAT: Encourage fluent multi-turn conversation with expanding detail. Ask open questions. E.g. "What do you love most in the whole world?"`,
-    `LEVEL 10 - ORAL MASTER: Open confident conversation on any topic. Celebrate their amazing ability. E.g. "You are incredible! What shall we talk about today?"`,
-  ];
+const COACH_TIPS = [
+  {e:"⏳",t:"Wait five seconds",b:"After asking a question, count to five silently. The pause creates space for [NAME] to find and produce words."},
+  {e:"➕",t:"Expand their words",b:"If [NAME] says 'fish', you say 'Yes! A big blue fish!' Adding one or two words models the next step."},
+  {e:"🔀",t:"Offer two choices",b:"Instead of open questions, try 'Do you want the dolphin or the turtle?' Choices make responding easier."},
+  {e:"👉",t:"Follow their lead",b:"If [NAME] points to something, name it and talk about it. Joining their interest builds connection."},
+  {e:"🎉",t:"Celebrate every attempt",b:"Effort matters far more than accuracy. Cheer any sound, point, or look — communication is communication."},
+  {e:"🛁",t:"Practice in real life",b:"Use the same target words at bath time, dinner, and outdoors. Repetition in daily life builds lasting language."},
+  {e:"👀",t:"Watch for signals",b:"A glance, a reach, or a point is communication too. Respond to these signals to encourage more."},
+  {e:"🌟",t:"End on a high note",b:"Keep sessions short and finish while [NAME] is still enjoying it. A happy ending invites them back."},
+];
 
-  return base + '\n\n' + levelInstructions[levelNum - 1];
+const today = () => new Date().toISOString().slice(0,10);
+const ageBandFor = (age) => age<=5 ? 1 : age<=7 ? 2 : 3;
+const BAND_NAMES = {1:"Early Learners 🌟",2:"Developing Communicators 🚀",3:"Growing Communicators 🌊"};
+
+const DEFAULT_STATE = {
+  setupDone:false, childName:"Ellie", childAge:4, ageBand:1, diagnosisFlags:[],
+  communicationLevel:2, interests:["turtles","dolphins"], sensoryMode:false, quietMode:false,
+  noSuddenSounds:false, highContrast:false, pecsMode:false, sessionTimeLimit:20,
+  companionName:"Shelly", companionType:"turtle", personality:"playful", voiceMale:false, stage:1,
+  stageProgress:{ attempts:0, successes:0, sessions:0, activities:[] },
+  wordsAttempted:[], wordsMastered:[], customVocabulary:[],
+  aquarium:[
+    {type:"turtle",emoji:"🐢",name:"Shelly the Turtle",desc:"Your very first friend, wise and kind.",date:today()},
+    {type:"clownfish",emoji:"🐠",name:"Finn the Clownfish",desc:"A cheerful little fish who loves to play.",date:today()},
+    {type:"seahorse",emoji:"🐚",name:"Pearl the Seahorse",desc:"Gentle and graceful, drifts through the reef.",date:today()},
+  ],
+  zonesUnlocked:["coral_reef","kelp_forest"], totalAttempts:0, totalSessions:0,
+  sessionHistory:[], milestones:[], therapistGoals:[], customActivities:[],
+  therapistNotes:"", therapistName:"", goalReviewDate:"", coachingTipsRead:[], lastSessionDate:null, lastSessionSummary:"",
+  _sessionRewards:0
+};
+
+const KEY = "oral_v2";
+function loadState() {
+  try { const raw = localStorage.getItem(KEY); if (raw) return {...DEFAULT_STATE, ...JSON.parse(raw)}; } catch(e){}
+  return {...DEFAULT_STATE};
+}
+function saveState(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
+
+/* ============================ CANVAS BG ============================ */
+function OceanBackground({ reduced, highContrast }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let raf, W, H;
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    const nBub = reduced ? 5 : 25;
+    const bubbles = Array.from({length:nBub}, () => ({ x:Math.random()*W, y:Math.random()*H, r:2+Math.random()*(reduced?6:9), s:0.2+Math.random()*(reduced?0.5:1.2), drift:Math.random()*0.5-0.25 }));
+    const rays = reduced ? [] : Array.from({length:6}, (_,i) => ({ x:(i+0.5)*(W/6), w:30+Math.random()*60, off:Math.random()*W, sp:0.15+Math.random()*0.2 }));
+    const fish = reduced ? [] : Array.from({length:8}, () => ({ x:Math.random()*W, y:Math.random()*H, s:0.3+Math.random()*0.7, dir:Math.random()<0.5?-1:1, size:6+Math.random()*10 }));
+    const parts = reduced ? [] : Array.from({length:30}, () => ({ x:Math.random()*W, y:Math.random()*H, r:1+Math.random()*2, ph:Math.random()*Math.PI*2, sp:0.5+Math.random() }));
+    let t = 0;
+    function draw() {
+      t += 0.016;
+      const g = ctx.createLinearGradient(0,0,0,H);
+      if (highContrast) { g.addColorStop(0,'#000814'); g.addColorStop(1,'#001233'); }
+      else { g.addColorStop(0,'#061428'); g.addColorStop(1,'#0d4f7c'); }
+      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+      rays.forEach(r => { const x = (r.x + r.off + t*r.sp*20) % (W+200) - 100; ctx.save(); ctx.globalAlpha=0.03; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+r.w,0); ctx.lineTo(x+r.w*2.2,H); ctx.lineTo(x+r.w*1.2,H); ctx.closePath(); ctx.fill(); ctx.restore(); });
+      parts.forEach(p => { const a = 0.25+0.25*Math.sin(t*p.sp+p.ph); ctx.save(); ctx.globalAlpha=a; ctx.fillStyle='#7fd7e8'; ctx.shadowBlur=8; ctx.shadowColor='#00b4b4'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); ctx.restore(); });
+      fish.forEach(f => { f.x += f.dir*f.s*0.6; if(f.x<-20)f.x=W+20; if(f.x>W+20)f.x=-20; ctx.save(); ctx.globalAlpha=0.18; ctx.fillStyle='#0a2540'; ctx.beginPath(); ctx.moveTo(f.x,f.y); ctx.lineTo(f.x-f.dir*f.size,f.y-f.size/2); ctx.lineTo(f.x-f.dir*f.size,f.y+f.size/2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(f.x-f.dir*f.size,f.y); ctx.lineTo(f.x-f.dir*f.size*1.6,f.y-f.size/2); ctx.lineTo(f.x-f.dir*f.size*1.6,f.y+f.size/2); ctx.closePath(); ctx.fill(); ctx.restore(); });
+      bubbles.forEach(b => { b.y -= b.s; b.x += b.drift; if(b.y<-20){ b.y=H+20; b.x=Math.random()*W; } ctx.save(); ctx.globalAlpha=0.35; ctx.strokeStyle='#c8f0f8'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,7); ctx.stroke(); ctx.fillStyle='rgba(200,240,248,.12)'; ctx.fill(); ctx.restore(); });
+      raf = requestAnimationFrame(draw);
+    }
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, [reduced, highContrast]);
+  return <canvas id="bgCanvas" ref={ref} />;
 }
 
-// ── Three.js helpers ──────────────────────────────────────────────────────────
-function buildOralCharacter(THREE) {
-  const group = new THREE.Group();
-  const skin = new THREE.MeshPhongMaterial({ color: 0xFFCBA4 });
-  const skinMat = skin;
-  const blueMat = new THREE.MeshPhongMaterial({ color: 0x3355AA });
-  const darkBlueMat = new THREE.MeshPhongMaterial({ color: 0x223377 });
-  const blackMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
-  const whiteMat = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
-  const brownMat = new THREE.MeshPhongMaterial({ color: 0x5C3317 });
-  const redMat = new THREE.MeshPhongMaterial({ color: 0xCC2222 });
-  const pinkMat = new THREE.MeshPhongMaterial({ color: 0xFF9999 });
-  const darkRedMat = new THREE.MeshPhongMaterial({ color: 0x8B0000 });
-  const torusMat = new THREE.MeshPhongMaterial({ color: 0xCC2222 });
-
-  // Head group
-  const headGroup = new THREE.Group();
-  headGroup.position.set(0, 1.65, 0);
-  group.add(headGroup);
-
-  const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), skinMat);
-  headGroup.add(headMesh);
-
-  // Hair
-  const hairMesh = new THREE.Mesh(new THREE.SphereGeometry(0.29, 16, 8, 0, Math.PI*2, 0, Math.PI*0.5), brownMat);
-  hairMesh.position.y = 0.05;
-  headGroup.add(hairMesh);
-
-  // Eyes
-  function makeEye(xOff) {
-    const eyeG = new THREE.Group();
-    eyeG.position.set(xOff, 0.06, 0.24);
-    const white = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), whiteMat);
-    eyeG.add(white);
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(0.042, 10, 10), new THREE.MeshPhongMaterial({color:0x5C3317}));
-    iris.position.z = 0.03;
-    eyeG.add(iris);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), blackMat);
-    pupil.position.z = 0.055;
-    eyeG.add(pupil);
-    const shine = new THREE.Mesh(new THREE.SphereGeometry(0.01, 6, 6), new THREE.MeshPhongMaterial({color:0xFFFFFF,emissive:0xFFFFFF}));
-    shine.position.set(0.015, 0.015, 0.07);
-    eyeG.add(shine);
-    return eyeG;
-  }
-  headGroup.add(makeEye(-0.1));
-  headGroup.add(makeEye(0.1));
-
-  // Eyebrows
-  function makeEyebrow(xOff) {
-    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.016, 0.012), brownMat);
-    brow.position.set(xOff, 0.16, 0.25);
-    brow.rotation.z = xOff < 0 ? 0.15 : -0.15;
-    return brow;
-  }
-  headGroup.add(makeEyebrow(-0.1));
-  headGroup.add(makeEyebrow(0.1));
-
-  // Nose
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), skinMat);
-  nose.position.set(0, -0.02, 0.28);
-  headGroup.add(nose);
-
-  // Cheeks
-  const cheekMat = new THREE.MeshPhongMaterial({color:0xFFAABB,transparent:true,opacity:0.4});
-  [-0.17, 0.17].forEach(x => {
-    const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), cheekMat);
-    cheek.position.set(x, -0.04, 0.22);
-    headGroup.add(cheek);
-  });
-
-  // Mouth group
-  const mouthGroup = new THREE.Group();
-  mouthGroup.position.set(0, -0.1, 0.27);
-  headGroup.add(mouthGroup);
-
-  // Closed smile (torus)
-  const smileMesh = new THREE.Mesh(
-    new THREE.TorusGeometry(0.055, 0.012, 8, 16, Math.PI),
-    torusMat
-  );
-  smileMesh.rotation.z = Math.PI;
-  mouthGroup.add(smileMesh);
-
-  // Open mouth group
-  const openMouthGroup = new THREE.Group();
-  openMouthGroup.visible = false;
-  mouthGroup.add(openMouthGroup);
-
-  const cavity = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.04, 0.04, 12), darkRedMat);
-  cavity.rotation.x = Math.PI/2;
-  openMouthGroup.add(cavity);
-
-  const teeth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.016, 0.012), whiteMat);
-  teeth.position.set(0, 0.025, 0.008);
-  openMouthGroup.add(teeth);
-
-  const tongue = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), pinkMat);
-  tongue.position.set(0, -0.015, -0.01);
-  openMouthGroup.add(tongue);
-
-  const upperLip = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.016, 0.012), redMat);
-  upperLip.position.set(0, 0.038, 0.015);
-  openMouthGroup.add(upperLip);
-
-  // Neck
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.14, 10), skinMat);
-  neck.position.set(0, 1.48, 0);
-  group.add(neck);
-
-  // Torso
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.52, 0.26), blueMat);
-  torso.position.set(0, 1.13, 0);
-  group.add(torso);
-
-  // Collar
-  const collarMat = new THREE.MeshPhongMaterial({color:0xFFFFFF,transparent:true,opacity:0.6});
-  const collar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.15), collarMat);
-  collar.position.set(0, 1.36, 0.1);
-  group.add(collar);
-
-  // Waist
-  const waist = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.24), darkBlueMat);
-  waist.position.set(0, 0.84, 0);
-  group.add(waist);
-
-  // Arms
-  function makeArm(side) {
-    const armGroup = new THREE.Group();
-    armGroup.position.set(side * 0.28, 1.3, 0);
-    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.28, 10), skinMat);
-    upperArm.position.set(side * 0.055, -0.14, 0);
-    armGroup.add(upperArm);
-    const elbowGroup = new THREE.Group();
-    elbowGroup.position.set(side * 0.055, -0.28, 0);
-    const lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.26, 10), skinMat);
-    lowerArm.position.set(0, -0.13, 0);
-    elbowGroup.add(lowerArm);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), skinMat);
-    hand.position.set(0, -0.26, 0);
-    elbowGroup.add(hand);
-    armGroup.add(elbowGroup);
-    return { armGroup, elbowGroup };
-  }
-  const leftArm = makeArm(-1);
-  const rightArm = makeArm(1);
-  group.add(leftArm.armGroup);
-  group.add(rightArm.armGroup);
-
-  // Legs
-  function makeLeg(side) {
-    const legGroup = new THREE.Group();
-    legGroup.position.set(side * 0.13, 0.75, 0);
-    const upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.065, 0.38, 10), darkBlueMat);
-    upperLeg.position.set(0, -0.19, 0);
-    legGroup.add(upperLeg);
-    const kneeGroup = new THREE.Group();
-    kneeGroup.position.set(0, -0.38, 0);
-    const lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.36, 10), darkBlueMat);
-    lowerLeg.position.set(0, -0.18, 0);
-    kneeGroup.add(lowerLeg);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.07, 0.2), blackMat);
-    foot.position.set(0, -0.38, 0.04);
-    kneeGroup.add(foot);
-    legGroup.add(kneeGroup);
-    return { legGroup, kneeGroup };
-  }
-  const leftLeg = makeLeg(-1);
-  const rightLeg = makeLeg(1);
-  group.add(leftLeg.legGroup);
-  group.add(rightLeg.legGroup);
-
-  return {
-    root: group,
-    headGroup,
-    leftArm, rightArm,
-    leftLeg, rightLeg,
-    smileMesh, openMouthGroup,
-  };
+/* ============================ CONFETTI ============================ */
+function Confetti({ go }) {
+  const [pieces, setPieces] = useState([]);
+  useEffect(() => {
+    if (!go) return;
+    const cols = ['#ffd700','#ff6b6b','#00b4b4','#7fd7e8','#22c55e','#c8f0f8'];
+    const p = Array.from({length:40}, (_,i) => ({ id:i+Math.random(), left:Math.random()*100, bg:cols[i%cols.length], delay:Math.random()*0.4, rot:Math.random()*360, round:Math.random()<0.5 }));
+    setPieces(p);
+    const tm = setTimeout(()=>setPieces([]), 2000);
+    return ()=>clearTimeout(tm);
+  }, [go]);
+  return pieces.map(p => <div key={p.id} className="confetti-piece" style={{ left:p.left+'%', top:'-20px', background:p.bg, animationDelay:p.delay+'s', transform:`rotate(${p.rot}deg)`, borderRadius: p.round?'50%':'2px' }} />);
 }
 
-function buildPlayground(THREE, scene) {
-  const cloudsList = [];
-  let mgrDisk = null;
-
-  // Ground
-  const groundMat = new THREE.MeshLambertMaterial({ color: 0x4CAF50 });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = 0;
-  scene.add(ground);
-
-  // Colour patches
-  const patchColors = [0x43A047, 0x66BB6A, 0x388E3C];
-  for (let i = 0; i < 12; i++) {
-    const patch = new THREE.Mesh(
-      new THREE.CircleGeometry(0.8 + Math.random() * 1.5, 12),
-      new THREE.MeshLambertMaterial({ color: patchColors[i % 3] })
-    );
-    patch.rotation.x = -Math.PI / 2;
-    patch.position.set((Math.random() - 0.5) * 20, 0.01, (Math.random() - 0.5) * 20);
-    scene.add(patch);
-  }
-
-  // Fence
-  const fencePostMat = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
-  const fenceRailMat = new THREE.MeshPhongMaterial({ color: 0xEEEEEE });
-  function addFenceSection(x, z, rotY, length) {
-    const railGeo = new THREE.BoxGeometry(length, 0.05, 0.04);
-    const r1 = new THREE.Mesh(railGeo, fenceRailMat);
-    r1.position.set(x, 0.55, z);
-    r1.rotation.y = rotY;
-    scene.add(r1);
-    const r2 = new THREE.Mesh(railGeo, fenceRailMat);
-    r2.position.set(x, 0.85, z);
-    r2.rotation.y = rotY;
-    scene.add(r2);
-    const numPosts = Math.ceil(length / 1.5) + 1;
-    for (let i = 0; i <= numPosts; i++) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.1, 0.06), fencePostMat);
-      const offset = (i / numPosts - 0.5) * length;
-      const dx = Math.cos(rotY) * offset;
-      const dz = Math.sin(rotY) * offset;
-      post.position.set(x + dx, 0.55, z + dz);
-      scene.add(post);
-    }
-  }
-  addFenceSection(0, -16, 0, 32);
-  addFenceSection(0, 16, 0, 32);
-  addFenceSection(-16, 0, Math.PI/2, 32);
-  addFenceSection(16, 0, Math.PI/2, 32);
-
-  // Trees
-  const trunkMat = new THREE.MeshPhongMaterial({ color: 0x8B5E3C });
-  const canopyColors = [0x2E7D32, 0x388E3C, 0x43A047, 0x1B5E20];
-  const treePositions = [[-8,-8],[-10,5],[7,-9],[9,4],[-5,-13],[6,-13],[-12,-3],[11,-3]];
-  treePositions.forEach(([tx, tz], i) => {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 1.2, 8), trunkMat);
-    trunk.position.set(tx, 0.6, tz);
-    scene.add(trunk);
-    for (let l = 0; l < 3; l++) {
-      const layer = new THREE.Mesh(
-        new THREE.SphereGeometry(0.9 - l * 0.18, 10, 8),
-        new THREE.MeshPhongMaterial({ color: canopyColors[(i + l) % 4] })
-      );
-      layer.position.set(tx, 1.6 + l * 0.45, tz);
-      scene.add(layer);
-    }
-  });
-
-  // Flowers
-  const flowerColors = [0xFF5252, 0xFF4081, 0xFFD740, 0x69F0AE, 0x40C4FF, 0xEA80FC];
-  for (let i = 0; i < 40; i++) {
-    const fx = (Math.random() - 0.5) * 28;
-    const fz = (Math.random() - 0.5) * 28;
-    const stemMat = new THREE.MeshPhongMaterial({ color: 0x4CAF50 });
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.25, 6), stemMat);
-    stem.position.set(fx, 0.125, fz);
-    scene.add(stem);
-    const flower = new THREE.Mesh(
-      new THREE.SphereGeometry(0.055, 8, 8),
-      new THREE.MeshPhongMaterial({ color: flowerColors[i % 6] })
-    );
-    flower.position.set(fx, 0.27, fz);
-    scene.add(flower);
-  }
-
-  // Slide
-  const slideMat = new THREE.MeshPhongMaterial({ color: 0xFF5252 });
-  const slideYellowMat = new THREE.MeshPhongMaterial({ color: 0xFDD835 });
-  const slideFrame = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.0, 0.1), slideMat);
-  slideFrame.position.set(-12, 1.0, -4);
-  scene.add(slideFrame);
-  const slideFrame2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.0, 0.1), slideMat);
-  slideFrame2.position.set(-12, 1.0, -3);
-  scene.add(slideFrame2);
-  const slideSurface = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.06, 2.0), slideYellowMat);
-  slideSurface.position.set(-12, 1.1, -3.5);
-  slideSurface.rotation.x = -0.5;
-  scene.add(slideSurface);
-
-  // Swing set
-  const swingMat = new THREE.MeshPhongMaterial({ color: 0x888888 });
-  const swingSeatMat = new THREE.MeshPhongMaterial({ color: 0xFF80AB });
-  const swingTop = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.1, 0.1), swingMat);
-  swingTop.position.set(-12, 2.3, 3);
-  scene.add(swingTop);
-  const swingL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8), swingMat);
-  swingL.position.set(-13.4, 1.1, 3);
-  swingL.rotation.z = 0.2;
-  scene.add(swingL);
-  const swingR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8), swingMat);
-  swingR.position.set(-10.6, 1.1, 3);
-  swingR.rotation.z = -0.2;
-  scene.add(swingR);
-  [-12.6, -11].forEach(sx => {
-    const chain = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.2, 0.04), swingMat);
-    chain.position.set(sx, 1.9, 3);
-    scene.add(chain);
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.3), swingSeatMat);
-    seat.position.set(sx, 1.3, 3);
-    scene.add(seat);
-  });
-
-  // Merry-go-round
-  const mgrBase = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.6, 8), new THREE.MeshPhongMaterial({color:0x888888}));
-  mgrBase.position.set(12, 0.3, -5);
-  scene.add(mgrBase);
-  mgrDisk = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.12, 18), new THREE.MeshPhongMaterial({color:0xFF6F00}));
-  mgrDisk.position.set(12, 0.65, -5);
-  scene.add(mgrDisk);
-  for (let s = 0; s < 6; s++) {
-    const angle = (s / 6) * Math.PI * 2;
-    const spoke = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.07, 0.07), new THREE.MeshPhongMaterial({color:0xE65100}));
-    spoke.position.set(12, 0.72, -5);
-    spoke.rotation.y = angle;
-    scene.add(spoke);
-  }
-
-  // Sandbox
-  const sandboxMat = new THREE.MeshPhongMaterial({ color: 0x8B6914 });
-  const sandMat = new THREE.MeshLambertMaterial({ color: 0xF5DEB3 });
-  const sbFrame = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.2, 2.2), sandboxMat);
-  sbFrame.position.set(12, 0.1, 4);
-  scene.add(sbFrame);
-  const sandFill = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.15, 1.9), sandMat);
-  sandFill.position.set(12, 0.17, 4);
-  scene.add(sandFill);
-
-  // Clouds
-  const cloudMat = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
-  const cloudPositions = [[-8,8,-10],[5,9,-12],[12,7.5,-8],[-3,8.5,-14],[0,9,-6],[8,8,-4],[-14,7,-7],[14,9,-11]];
-  cloudPositions.forEach(([cx, cy, cz]) => {
-    const cloudG = new THREE.Group();
-    cloudG.position.set(cx, cy, cz);
-    for (let c = 0; c < 5; c++) {
-      const blob = new THREE.Mesh(new THREE.SphereGeometry(0.55 + Math.random() * 0.35, 8, 8), cloudMat);
-      blob.position.set((c - 2) * 0.55, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.3);
-      cloudG.add(blob);
-    }
-    scene.add(cloudG);
-    cloudsList.push(cloudG);
-  });
-
-  return { clouds: cloudsList, mgrDisk };
+/* ============================ MATCHING ============================ */
+function matchTier(said, target) {
+  if (!said) return 'silence';
+  const s = said.toLowerCase().trim();
+  const t = String(target).toLowerCase().trim();
+  if (s === t) return 'exact';
+  if (s.includes(t) || t.includes(s)) return 'close';
+  const tWords = t.split(/\s+/);
+  if (tWords.some(w => w.length>2 && s.includes(w))) return 'close';
+  if (t.length>=3 && s.length>=2 && s.slice(0,3)===t.slice(0,3)) return 'close';
+  return 'any';
 }
 
-// ── Setup Talk Scene ──────────────────────────────────────────────────────────
-function setupTalkScene(canvas, stateRef) {
-  const THREE = window.THREE;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  renderer.setClearColor(0x87CEEB);
-
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x87CEEB, 18, 35);
-
-  const camera = new THREE.PerspectiveCamera(52, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-  camera.position.set(0, 2.4, 7.2);
-  camera.lookAt(0, 1.1, 0);
-
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.65);
-  scene.add(ambientLight);
-  const sunLight = new THREE.DirectionalLight(0xFFE8C8, 0.9);
-  sunLight.position.set(6, 12, 8);
-  scene.add(sunLight);
-  const fillLight = new THREE.DirectionalLight(0xC8DDFF, 0.4);
-  fillLight.position.set(-5, 4, -3);
-  scene.add(fillLight);
-
-  const character = buildOralCharacter(THREE);
-  scene.add(character.root);
-  character.root.position.set(3, 0, 1);
-  character.root.rotation.y = -0.5;
-
-  const { clouds, mgrDisk } = buildPlayground(THREE, scene);
-
-  // Speech bubble sprite
-  const bubbleCanvas = document.createElement('canvas');
-  bubbleCanvas.width = 512; bubbleCanvas.height = 220;
-  const bubbleTex = new THREE.CanvasTexture(bubbleCanvas);
-  const bubbleSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: bubbleTex, transparent: true }));
-  bubbleSprite.scale.set(3.0, 1.3, 1);
-  bubbleSprite.position.set(0, 2.5, 0);
-  bubbleSprite.visible = false;
-  character.root.add(bubbleSprite);
-
-  function drawBubble(text) {
-    const ctx = bubbleCanvas.getContext('2d');
-    ctx.clearRect(0, 0, 512, 220);
-    ctx.fillStyle = '#FFFFFF';
-    const r = 30;
-    ctx.beginPath();
-    ctx.moveTo(r, 10); ctx.lineTo(512-r, 10);
-    ctx.arcTo(512-10, 10, 512-10, 220-r, r);
-    ctx.lineTo(512-10, 220-r);
-    ctx.arcTo(512-10, 210, 512-10-r, 210, r);
-    ctx.lineTo(280, 210); ctx.lineTo(256, 220); ctx.lineTo(230, 210);
-    ctx.lineTo(r, 210);
-    ctx.arcTo(10, 210, 10, 210-r, r);
-    ctx.lineTo(10, r);
-    ctx.arcTo(10, 10, r, 10, r);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#3355AA';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.fillStyle = '#1a1a2e';
-    ctx.font = 'bold 26px Arial';
-    ctx.textAlign = 'center';
-    const words = text.split(' ');
-    const lines = [];
-    let line = '';
-    for (const w of words) {
-      const test = line ? line + ' ' + w : w;
-      if (ctx.measureText(test).width > 460) { lines.push(line); line = w; }
-      else line = test;
-    }
-    if (line) lines.push(line);
-    const lineH = 36;
-    const startY = 110 - ((lines.length - 1) * lineH) / 2;
-    lines.forEach((l, i) => ctx.fillText(l, 256, startY + i * lineH));
-    bubbleTex.needsUpdate = true;
-  }
-
-  // Walk path
-  let walkAngle = 0;
-  let approachActive = false;
-  let walkActive = true;
-  let mouthInterval = null;
-  let lastTime = performance.now();
-
-  function setMouthOpen(open) {
-    character.smileMesh.visible = !open;
-    character.openMouthGroup.visible = open;
-  }
-
-  function startTalking(text) {
-    approachActive = true;
-    walkActive = false;
-    if (text) {
-      drawBubble(text);
-      bubbleSprite.visible = true;
-    }
-    if (mouthInterval) clearInterval(mouthInterval);
-    let mouthOpen = false;
-    mouthInterval = setInterval(() => {
-      mouthOpen = !mouthOpen;
-      setMouthOpen(mouthOpen);
-    }, 140);
-  }
-
-  function stopTalking() {
-    if (mouthInterval) { clearInterval(mouthInterval); mouthInterval = null; }
-    setMouthOpen(false);
-    bubbleSprite.visible = false;
-    setTimeout(() => { walkActive = true; approachActive = false; }, 2000);
-  }
-
-  let rafId;
-  function animate() {
-    rafId = requestAnimationFrame(animate);
-    const now = performance.now();
-    const dt = Math.min((now - lastTime) / 1000, 0.05);
-    lastTime = now;
-    const t = now * 0.001;
-
-    const state = stateRef.current;
-
-    if (state.speaking) {
-      startTalking._armed = true;
-      if (!mouthInterval) {
-        let mO = false;
-        mouthInterval = setInterval(() => { mO = !mO; setMouthOpen(mO); }, 140);
-      }
-      if (state.lastText && state.lastText !== startTalking._lastDrawn) {
-        startTalking._lastDrawn = state.lastText;
-        drawBubble(state.lastText);
-        bubbleSprite.visible = true;
-      }
-      approachActive = true;
-      walkActive = false;
-    } else {
-      if (startTalking._armed) {
-        startTalking._armed = false;
-        if (mouthInterval) { clearInterval(mouthInterval); mouthInterval = null; }
-        setMouthOpen(false);
-        bubbleSprite.visible = false;
-        setTimeout(() => { walkActive = true; approachActive = false; }, 3000);
-      }
-    }
-
-    if (state.listening) {
-      character.headGroup.rotation.x = Math.lerp ? Math.lerp(character.headGroup.rotation.x, -0.1, 0.05) : character.headGroup.rotation.x * 0.95 + (-0.1) * 0.05;
-    } else {
-      character.headGroup.rotation.x = character.headGroup.rotation.x * 0.95;
-    }
-
-    if (state.celebrating) {
-      const bounce = Math.abs(Math.sin(t * 6));
-      character.root.position.y = bounce * 0.3;
-      character.leftArm.armGroup.rotation.z = -2.0;
-      character.rightArm.armGroup.rotation.z = 2.0;
-    } else {
-      character.root.position.y = 0;
-      if (walkActive) {
-        walkAngle += dt * 0.4;
-        const radius = 3.5;
-        const tx = Math.cos(walkAngle) * radius;
-        const tz = Math.sin(walkAngle) * radius;
-        const dx = tx - character.root.position.x;
-        const dz = tz - character.root.position.z;
-        character.root.position.x += dx * dt * 1.5;
-        character.root.position.z += dz * dt * 1.5;
-        const targetAngle = Math.atan2(dx, dz);
-        const dRot = targetAngle - character.root.rotation.y;
-        character.root.rotation.y += Math.max(-0.08, Math.min(0.08, dRot));
-
-        const walk = Math.sin(t * 3);
-        character.leftLeg.legGroup.rotation.x = walk * 0.55;
-        character.rightLeg.legGroup.rotation.x = -walk * 0.55;
-        character.leftArm.armGroup.rotation.x = -walk * 0.4;
-        character.rightArm.armGroup.rotation.x = walk * 0.4;
-        character.leftLeg.kneeGroup.rotation.x = Math.max(0, Math.sin(t * 3) * 0.3);
-        character.rightLeg.kneeGroup.rotation.x = Math.max(0, -Math.sin(t * 3) * 0.3);
-        character.leftArm.armGroup.rotation.z = 0.1;
-        character.rightArm.armGroup.rotation.z = -0.1;
-
-        // Idle wave
-        if (Math.sin(t * 0.3) > 0.9) {
-          character.rightArm.armGroup.rotation.x = -1.5;
-          character.rightArm.armGroup.rotation.z = 0.4;
-        }
-      } else if (approachActive) {
-        const dy = character.root.rotation.y;
-        character.root.rotation.y += (0 - dy) * 0.06;
-        const pdx = 0 - character.root.position.x;
-        const pdz = 1.5 - character.root.position.z;
-        character.root.position.x += pdx * dt * 1.8;
-        character.root.position.z += pdz * dt * 1.8;
-        // Talking gestures
-        character.leftArm.armGroup.rotation.x = Math.sin(t * 2) * 0.4 - 0.3;
-        character.rightArm.armGroup.rotation.x = Math.sin(t * 2 + 1) * 0.4 - 0.3;
-        character.leftArm.armGroup.rotation.z = 0.3;
-        character.rightArm.armGroup.rotation.z = -0.3;
-        character.leftLeg.legGroup.rotation.x = 0;
-        character.rightLeg.legGroup.rotation.x = 0;
-      }
-
-      // Body idle sway when standing still
-      if (!walkActive && !approachActive) {
-        character.root.rotation.z = Math.sin(t * 0.8) * 0.02;
-      }
-    }
-
-    // Clouds drift
-    clouds.forEach(c => {
-      c.position.x += dt * 0.5;
-      if (c.position.x > 20) c.position.x = -20;
-    });
-
-    // MGR spin
-    if (mgrDisk) mgrDisk.rotation.y += dt * 0.5;
-
-    renderer.render(scene, camera);
-  }
-
-  animate();
-
-  const resize = () => {
-    camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+/* ============================ SHARED MIC PANEL ============================ */
+function MicPanel({ st, prompt, onResult, onSkip, pecsCards }) {
+  const { available, listen, micError } = useSpeech();
+  const [phase, setPhase] = useState('idle');
+  const start = () => {
+    playListening(); setPhase('ready');
+    setTimeout(() => { setPhase('listening'); listen(said=>onResult(said), ()=>setPhase('idle')); }, 600);
   };
-  window.addEventListener('resize', resize);
-
-  return () => {
-    cancelAnimationFrame(rafId);
-    window.removeEventListener('resize', resize);
-    if (mouthInterval) clearInterval(mouthInterval);
-    renderer.dispose();
-    renderer.forceContextLoss();
-  };
-}
-
-// ── Setup Fish Scene ──────────────────────────────────────────────────────────
-function setupFishScene(canvas, { fishCount, onComplete }) {
-  const THREE = window.THREE;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  renderer.setClearColor(0x010820);
-
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x010820, 10, 28);
-
-  const camera = new THREE.PerspectiveCamera(52, canvas.clientWidth / canvas.clientHeight, 0.1, 50);
-  camera.position.set(0, 3.5, 9);
-  camera.lookAt(0, 1.2, 0);
-
-  const ambient = new THREE.AmbientLight(0x204060, 1.0);
-  scene.add(ambient);
-  const spot1 = new THREE.SpotLight(0xB0DFFF, 1.2);
-  spot1.position.set(-3, 6, 2);
-  spot1.target.position.set(-3, 1, 0);
-  scene.add(spot1); scene.add(spot1.target);
-  const spot2 = new THREE.SpotLight(0xB0DFFF, 1.2);
-  spot2.position.set(3, 6, 2);
-  spot2.target.position.set(3, 1, 0);
-  scene.add(spot2); scene.add(spot2.target);
-  const fill = new THREE.PointLight(0x4080C0, 0.5);
-  fill.position.set(0, 3, 5);
-  scene.add(fill);
-
-  // Table
-  const tableMat = new THREE.MeshPhongMaterial({ color: 0x5C3317 });
-  const tableTop = new THREE.Mesh(new THREE.BoxGeometry(9.5, 0.18, 3.0), tableMat);
-  tableTop.position.set(0, 0.3, 0);
-  scene.add(tableTop);
-  [[-4.2,-1],[-4.2,1],[4.2,-1],[4.2,1]].forEach(([tx,tz]) => {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.4, 8), tableMat);
-    leg.position.set(tx, 0.1, tz);
-    scene.add(leg);
-  });
-
-  function buildTank(centerX) {
-    const tankG = new THREE.Group();
-    tankG.position.set(centerX, 0.4, 0);
-
-    const glassMat = new THREE.MeshPhongMaterial({color:0x88BBFF,transparent:true,opacity:0.22,side:THREE.DoubleSide});
-    const frameMat = new THREE.MeshPhongMaterial({color:0x4488FF,emissive:0x112244});
-    const sandMat = new THREE.MeshLambertMaterial({color:0xD2B48C});
-    const waterMat = new THREE.MeshPhongMaterial({color:0x1565C0,transparent:true,opacity:0.28});
-    const seaweedMat = new THREE.MeshLambertMaterial({color:0x2E7D32});
-
-    const W = 2.8, H = 2.0, D = 1.8;
-
-    // Glass walls
-    const planes = [
-      {w:W,h:H,pos:[0,H/2,D/2],rot:[0,0,0]},
-      {w:W,h:H,pos:[0,H/2,-D/2],rot:[0,0,0]},
-      {w:D,h:H,pos:[-W/2,H/2,0],rot:[0,Math.PI/2,0]},
-      {w:D,h:H,pos:[W/2,H/2,0],rot:[0,Math.PI/2,0]},
-    ];
-    planes.forEach(p => {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.h), glassMat);
-      m.position.set(...p.pos);
-      m.rotation.set(...p.rot);
-      tankG.add(m);
-    });
-
-    // Frame edges
-    const edgeGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
-    const corners = [[-W/2,0,-D/2],[-W/2,0,D/2],[W/2,0,-D/2],[W/2,0,D/2],
-                     [-W/2,H,-D/2],[-W/2,H,D/2],[W/2,H,-D/2],[W/2,H,D/2]];
-    corners.forEach(c => {
-      const e = new THREE.Mesh(edgeGeo, frameMat);
-      e.position.set(...c);
-      tankG.add(e);
-    });
-    // Top and bottom rails
-    const topBot = new THREE.BoxGeometry(W, 0.05, 0.05);
-    [[0,0,-D/2],[0,0,D/2],[0,H,-D/2],[0,H,D/2]].forEach(pos => {
-      const r = new THREE.Mesh(topBot, frameMat);
-      r.position.set(...pos);
-      tankG.add(r);
-    });
-    const sides = new THREE.BoxGeometry(0.05, H, 0.05);
-    [[-W/2,H/2,-D/2],[-W/2,H/2,D/2],[W/2,H/2,-D/2],[W/2,H/2,D/2]].forEach(pos => {
-      const r = new THREE.Mesh(sides, frameMat);
-      r.position.set(...pos);
-      tankG.add(r);
-    });
-
-    // Sand
-    const sand = new THREE.Mesh(new THREE.BoxGeometry(W-0.1, 0.12, D-0.1), sandMat);
-    sand.position.set(0, 0.06, 0);
-    tankG.add(sand);
-
-    // Water
-    const water = new THREE.Mesh(new THREE.BoxGeometry(W-0.08, H-0.2, D-0.08), waterMat);
-    water.position.set(0, (H-0.2)/2 + 0.1, 0);
-    tankG.add(water);
-
-    // Seaweed
-    for (let s = 0; s < 4; s++) {
-      const sh = 0.5 + Math.random() * 0.9;
-      const sw = new THREE.Mesh(new THREE.BoxGeometry(0.06, sh, 0.06), seaweedMat);
-      sw.position.set((Math.random()-0.5)*(W-0.5), sh/2 + 0.12, (Math.random()-0.5)*(D-0.4));
-      tankG.add(sw);
-    }
-
-    scene.add(tankG);
-    return tankG;
-  }
-
-  const leftTank = buildTank(-3.0);
-  const rightTank = buildTank(3.0);
-
-  function buildFish(color) {
-    const fishG = new THREE.Group();
-    const mat = new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.05 });
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), mat);
-    body.scale.set(1.75, 1, 1);
-    fishG.add(body);
-
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.22, 4), mat);
-    tail.position.set(-0.35, 0, 0);
-    tail.rotation.z = Math.PI / 2;
-    fishG.add(tail);
-
-    const tailFin = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.16, 4), mat);
-    tailFin.position.set(-0.38, 0.08, 0);
-    tailFin.rotation.z = Math.PI / 2 + 0.4;
-    fishG.add(tailFin);
-
-    const dorsalFin = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.15, 4), mat);
-    dorsalFin.position.set(0, 0.18, 0);
-    fishG.add(dorsalFin);
-
-    const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), new THREE.MeshPhongMaterial({color:0xFFFFFF}));
-    eyeWhite.position.set(0.26, 0.05, 0.1);
-    fishG.add(eyeWhite);
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), new THREE.MeshPhongMaterial({color:0x111111}));
-    pupil.position.set(0.29, 0.05, 0.12);
-    fishG.add(pupil);
-
-    const pectoral = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 4), new THREE.MeshPhongMaterial({color,transparent:true,opacity:0.7}));
-    pectoral.position.set(0.1, -0.1, 0.15);
-    pectoral.rotation.z = -0.5;
-    fishG.add(pectoral);
-
-    fishG._mat = mat;
-    return fishG;
-  }
-
-  const FISH_COLORS = [0xFF6B35, 0x00BCD4, 0xFFD740, 0xFF80AB, 0x40C4FF, 0x69F0AE];
-  const fishList = [];
-  const fishPhases = [];
-  const fishInRight = [];
-  const fishFlying = [];
-
-  for (let i = 0; i < fishCount; i++) {
-    const fish = buildFish(FISH_COLORS[i % FISH_COLORS.length]);
-    fish.position.set(-3 + (Math.random()-0.5)*2.2, 0.7 + Math.random()*1.2, (Math.random()-0.5)*1.2);
-    scene.add(fish);
-    fishList.push(fish);
-    fishPhases.push(Math.random() * Math.PI * 2);
-    fishInRight.push(false);
-    fishFlying.push(false);
-  }
-
-  // Bubbles
-  const bubbles = [];
-  const bubbleMat = new THREE.MeshPhongMaterial({color:0xAADDFF,transparent:true,opacity:0.4});
-  for (let i = 0; i < 24; i++) {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.03 + Math.random()*0.04, 6, 6), bubbleMat);
-    const inRight = i >= 12;
-    const bx = inRight ? 3 : -3;
-    b.position.set(bx + (Math.random()-0.5)*2.4, Math.random()*1.8+0.2, (Math.random()-0.5)*1.4);
-    b._rise = 0.4 + Math.random() * 0.6;
-    b._drift = (Math.random()-0.5)*0.15;
-    b._tank = inRight ? 3 : -3;
-    b._maxY = 2.1;
-    scene.add(b);
-    bubbles.push(b);
-  }
-
-  let movedCount = 0;
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-
-  function flyFish(idx) {
-    if (fishFlying[idx] || fishInRight[idx]) return;
-    fishFlying[idx] = true;
-    const fish = fishList[idx];
-    fish._mat.emissiveIntensity = 0.35;
-
-    const startX = fish.position.x;
-    const startY = fish.position.y;
-    const startZ = fish.position.z;
-    const endX = 3 + (Math.random()-0.5)*1.8;
-    const endY = 0.7 + Math.random()*0.9;
-    const endZ = (Math.random()-0.5)*1.2;
-    const dur = 1.35;
-    let elapsed = 0;
-    const fly = setInterval(() => {
-      elapsed += 1/60;
-      const t = Math.min(elapsed / dur, 1);
-      fish.position.x = startX + (endX - startX) * t;
-      fish.position.y = startY + Math.sin(t * Math.PI) * 4.5 + (endY - startY) * t;
-      fish.position.z = startZ + (endZ - startZ) * t;
-      fish.rotation.z = Math.sin(t * Math.PI) * 0.4;
-      fish.rotation.y = endX > startX ? 0 : Math.PI;
-      if (t >= 1) {
-        clearInterval(fly);
-        fishFlying[idx] = false;
-        fishInRight[idx] = true;
-        fish._mat.emissiveIntensity = 0.08;
-        fish.rotation.z = 0;
-        movedCount++;
-        if (onComplete) onComplete(movedCount);
-      }
-    }, 1000/60);
-  }
-
-  function onClick(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(fishList, true);
-    if (hits.length > 0) {
-      let obj = hits[0].object;
-      while (obj.parent && !fishList.includes(obj)) obj = obj.parent;
-      const idx = fishList.indexOf(obj);
-      if (idx >= 0 && !fishInRight[idx]) flyFish(idx);
-    }
-  }
-
-  function onMouseMove(e) {
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(fishList, true);
-    const hitFish = new Set();
-    if (hits.length > 0) {
-      let obj = hits[0].object;
-      while (obj.parent && !fishList.includes(obj)) obj = obj.parent;
-      const idx = fishList.indexOf(obj);
-      if (idx >= 0 && !fishInRight[idx]) { hitFish.add(idx); canvas.style.cursor = 'pointer'; }
-      else canvas.style.cursor = 'default';
-    } else canvas.style.cursor = 'default';
-    fishList.forEach((f, i) => {
-      const target = hitFish.has(i) ? 0.25 : (fishInRight[i] ? 0.08 : 0.05);
-      f._mat.emissiveIntensity += (target - f._mat.emissiveIntensity) * 0.12;
-    });
-  }
-
-  canvas.addEventListener('click', onClick);
-  canvas.addEventListener('touchstart', onClick);
-  canvas.addEventListener('mousemove', onMouseMove);
-
-  let rafId;
-  let lastTime = performance.now();
-
-  function animate() {
-    rafId = requestAnimationFrame(animate);
-    const now = performance.now();
-    const dt = Math.min((now - lastTime) / 1000, 0.05);
-    lastTime = now;
-    const t = now * 0.001;
-
-    fishList.forEach((fish, i) => {
-      if (!fishFlying[i]) {
-        if (!fishInRight[i]) {
-          const phase = fishPhases[i];
-          fish.position.x = -3 + Math.sin(t * 0.55 + phase) * 1.05;
-          fish.position.y = 0.7 + Math.sin(t * 0.75 + phase * 1.3) * 0.62;
-          fish.position.z = Math.cos(t * 0.45 + phase * 0.8) * 0.5;
-          fish.rotation.y = Math.sin(t * 0.55 + phase) > 0 ? 0 : Math.PI;
-        } else {
-          const phase = fishPhases[i] + 3;
-          fish.position.x = 3 + Math.sin(t * 0.5 + phase) * 0.9;
-          fish.position.y = 0.7 + Math.sin(t * 0.7 + phase * 1.2) * 0.5;
-          fish.position.z = Math.cos(t * 0.4 + phase * 0.9) * 0.5;
-          fish.rotation.y = Math.sin(t * 0.5 + phase) > 0 ? 0 : Math.PI;
-        }
-        fish.children[1].rotation.y = Math.sin(t * 8 + fishPhases[i]) * 0.28;
-      }
-    });
-
-    bubbles.forEach(b => {
-      b.position.y += b._rise * dt;
-      b.position.x += b._drift * dt;
-      if (b.position.y > b._maxY) {
-        b.position.y = 0.15;
-        b.position.x = b._tank + (Math.random()-0.5)*2.2;
-      }
-    });
-
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  const resize = () => {
-    camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  };
-  window.addEventListener('resize', resize);
-
-  return () => {
-    cancelAnimationFrame(rafId);
-    canvas.removeEventListener('click', onClick);
-    canvas.removeEventListener('touchstart', onClick);
-    canvas.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('resize', resize);
-    renderer.dispose();
-    renderer.forceContextLoss();
-  };
-}
-
-// ── Confetti ──────────────────────────────────────────────────────────────────
-function Confetti() {
-  const pieces = Array.from({length:60}, (_,i) => ({
-    id:i,
-    x: Math.random()*100,
-    color: ['#ffd200','#ff6b35','#f093fb','#667eea','#38ef7d','#ff4081'][i%6],
-    delay: Math.random()*2,
-    duration: 2 + Math.random()*2,
-    rotate: Math.random()*360,
-  }));
+  const usePecs = st.pecsMode || !available;
   return (
-    <div className="confetti-wrap">
-      {pieces.map(p => (
-        <div key={p.id} className="confetti-piece" style={{
-          left:`${p.x}%`,
-          background: p.color,
-          animationDelay:`${p.delay}s`,
-          animationDuration:`${p.duration}s`,
-          transform:`rotate(${p.rotate}deg)`,
-        }}/>
-      ))}
+    <div className="center" style={{gap:16}}>
+      <div className="speech-bubble">{prompt}</div>
+      {!usePecs && phase==='idle' && <button className="mic-btn" onClick={start}>🎤</button>}
+      {phase==='ready' && <div className="badge" style={{fontSize:22,padding:'18px 30px'}}>Get ready… 🎤</div>}
+      {phase==='listening' && (
+        <div className="center" style={{gap:10}}>
+          <button className="mic-btn listening">🎤</button>
+          <div className="waveform">{[0,1,2,3,4,5,6].map(i=><span key={i} style={{animationDelay:(i*0.1)+'s'}} />)}</div>
+          <div className="muted">I'm listening… go ahead!</div>
+        </div>
+      )}
+      {usePecs && (
+        <div className="pecs-grid">
+          {pecsCards.map((c,i) => (
+            <div key={i} className="pecs-card" style={c.style} onClick={()=>{playTap();onResult(c.word);}}>
+              {c.emoji && <span className="pe">{c.emoji}</span>}<span className="pl">{c.label||c.word}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {micError && <div className="mic-error">{micError}</div>}
+      <button className="btn ghost" onClick={onSkip}>Skip / Next →</button>
     </div>
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────────
-function OralApp() {
-  const saved = loadState();
+/* ============================ APP ============================ */
+function App() {
+  const [st, setSt] = useState(loadState);
+  const [screen, setScreen] = useState(() => loadState().setupDone ? 'world' : 'welcome');
+  const [game, setGame] = useState(null);
+  const update = useCallback((patch) => setSt(prev => { const next = typeof patch==='function' ? patch(prev) : {...prev, ...patch}; saveState(next); return next; }), []);
 
-  const [view, setView] = useState(saved ? 'talk' : 'welcome'); // welcome | wizard | talk | fishgame | dashboard | celebration
-  const [apiKey, setApiKey] = useState(saved?.apiKey || '');
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [showApiKeyScreen, setShowApiKeyScreen] = useState(!saved?.apiKey);
-  const [level, setLevel] = useState(saved?.level || 1);
-  const [stars, setStars] = useState(saved?.stars || 0);
-  const [totalStars, setTotalStars] = useState(saved?.totalStars || 0);
-  const [levelProgress, setLevelProgress] = useState(saved?.levelProgress || Array(10).fill(0));
-  const [sessionTurns, setSessionTurns] = useState(0);
-  const [sessionWords, setSessionWords] = useState(0);
-  const [messages, setMessages] = useState([]);
-  const [speaking, setSpeaking] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [lastText, setLastText] = useState('');
-  const [celebrating, setCelebrating] = useState(false);
-  const [typingMode, setTypingMode] = useState(false);
-  const [textInput, setTextInput] = useState('');
-  const [wizardChoice, setWizardChoice] = useState(null);
-  const [wizardLevel, setWizardLevel] = useState(1);
-  const [fishMoved, setFishMoved] = useState(0);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationMsg, setCelebrationMsg] = useState('');
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
-  const [dashUnlocked, setDashUnlocked] = useState(false);
-  const [starBursts, setStarBursts] = useState([]);
+  useEffect(() => { QUIET = st.quietMode; NO_SUDDEN = st.noSuddenSounds; }, [st.quietMode, st.noSuddenSounds]);
+  useEffect(() => { document.body.classList.toggle('high-contrast', st.highContrast); document.body.classList.toggle('no-anim', st.sensoryMode); }, [st.highContrast, st.sensoryMode]);
 
-  const canvasRef = useRef(null);
-  const sceneState = useRef({ speaking: false, listening: false, lastText: '', celebrating: false });
-  const recognitionRef = useRef(null);
-  const ttsRef = useRef(null);
+  return (
+    <div className={"app-root"+(st.highContrast?' high-contrast':'')}>
+      <OceanBackground reduced={st.sensoryMode} highContrast={st.highContrast} />
+      <div className="layer">
+        {screen==='welcome' && <Welcome onChild={()=>setScreen(st.setupDone?'world':'wizard')} onParent={()=>setScreen('gate')} />}
+        {screen==='wizard' && <Wizard st={st} update={update} onDone={()=>setScreen('world')} />}
+        {screen==='world' && <World st={st} update={update} game={game} setGame={setGame} goParent={()=>setScreen('gate')} />}
+        {screen==='gate' && <PinGate onPass={(which)=>setScreen(which==='alt'?'therapist':'parent')} onCancel={()=>setScreen(st.setupDone?'world':'welcome')} />}
+        {screen==='parent' && <ParentDashboard st={st} update={update} onExit={()=>setScreen(st.setupDone?'world':'welcome')} onTherapist={()=>setScreen('therapist')} />}
+        {screen==='therapist' && <TherapistDashboard st={st} update={update} onExit={()=>setScreen('parent')} />}
+      </div>
+    </div>
+  );
+}
 
-  // Sync refs
-  useEffect(() => { sceneState.current.speaking = speaking; }, [speaking]);
-  useEffect(() => { sceneState.current.listening = listening; }, [listening]);
-  useEffect(() => { sceneState.current.lastText = lastText; }, [lastText]);
-  useEffect(() => { sceneState.current.celebrating = celebrating; }, [celebrating]);
+/* ============================ WELCOME ============================ */
+function Welcome({ onChild, onParent }) {
+  useEffect(()=>{ const tm=setTimeout(()=>{ try{ window.speechSynthesis && window.speechSynthesis.getVoices(); }catch(e){} },300); return ()=>clearTimeout(tm); },[]);
+  return (
+    <div className="center" style={{minHeight:'100vh', padding:24}}>
+      <h1 className="glow-title">🌊 Oral</h1>
+      <p className="tagline">A magical underwater friendship that quietly teaches communication.</p>
+      <div className="center" style={{gap:16, width:'100%', maxWidth:360}}>
+        <button className="btn gold" style={{width:'100%', fontSize:24, minHeight:68}} onClick={()=>{playTap();onChild();}}>Start Adventure 🐢</button>
+        <button className="btn ghost" style={{width:'100%'}} onClick={()=>{playTap();onParent();}}>Parent / Therapist 🔒</button>
+      </div>
+    </div>
+  );
+}
 
-  // Persist
+/* ============================ WIZARD ============================ */
+function Wizard({ st, update, onDone }) {
+  const [step, setStep] = useState(1);
+  const [d, setD] = useState({
+    childName: st.childName, childAge: st.childAge, diagnosisFlags: [...st.diagnosisFlags],
+    communicationLevel: st.communicationLevel, interests: [...st.interests],
+    sensoryMode: st.sensoryMode, quietMode: st.quietMode, noSuddenSounds: st.noSuddenSounds,
+    highContrast: st.highContrast, sessionTimeLimit: st.sessionTimeLimit,
+    companionName: st.companionName||"Shelly", companionType: st.companionType, personality: st.personality, voiceMale: st.voiceMale
+  });
+  const band = ageBandFor(d.childAge);
+  const set = (p)=>setD(prev=>({...prev,...p}));
+  const toggleArr = (key, val) => set({[key]: d[key].includes(val) ? d[key].filter(x=>x!==val) : [...d[key], val]});
+  const finish = () => { update({...d, ageBand: band, setupDone:true, companionName: d.companionName||"Shelly"}); playReward(); onDone(); };
+  const next = () => { playTap(); setStep(s=>Math.min(5,s+1)); };
+  const back = () => { playTap(); setStep(s=>Math.max(1,s-1)); };
+  const diagOpts = ["Autism Spectrum Disorder","Speech Delay","Childhood Apraxia of Speech","Limited verbal","Emerging communicator"];
+  const commOpts = ["Uses sounds, gestures, or pointing only","Uses single words","Uses 2–3 word phrases","Uses short sentences (4–5 words)","Has conversational language but struggles socially"];
+  return (
+    <div className="scroll-pad">
+      <div className="row" style={{justifyContent:'center', marginBottom:16}}>{[1,2,3,4,5].map(n => <div key={n} style={{width:34,height:8,borderRadius:4,background:n<=step?'var(--gold)':'rgba(255,255,255,.2)'}} />)}</div>
+      <h2 className="sect" style={{textAlign:'center'}}>Step {step} of 5</h2>
+
+      {step===1 && <div className="card">
+        <h3 className="sub">Child Profile</h3>
+        <label className="fld"><span>Child's name</span><input className="input" value={d.childName} onChange={e=>set({childName:e.target.value})} placeholder="e.g. Ellie" /></label>
+        <label className="fld"><span>Age: {d.childAge}</span><input type="range" min="3" max="10" value={d.childAge} style={{width:'100%'}} onChange={e=>set({childAge:+e.target.value})} /></label>
+        <div className="zone-banner">Age band: {BAND_NAMES[band]}</div>
+        <h3 className="sub">Diagnosis flags</h3>
+        <div className="choice-grid">{diagOpts.map(o => <button key={o} className={"choice"+(d.diagnosisFlags.includes(o)?' sel':'')} onClick={()=>{playTap();toggleArr('diagnosisFlags',o);}}>{d.diagnosisFlags.includes(o)?'✅':'⬜'} {o}</button>)}</div>
+      </div>}
+
+      {step===2 && <div className="card">
+        <h3 className="sub">What best describes {d.childName||'your child'}'s communication right now?</h3>
+        <div className="choice-grid">{commOpts.map((o,i) => <button key={i} className={"choice"+(d.communicationLevel===i+1?' sel':'')} onClick={()=>{playTap();set({communicationLevel:i+1});}}><b style={{color:'var(--gold)'}}>{i+1}</b> {o}</button>)}</div>
+      </div>}
+
+      {step===3 && <div className="card">
+        <h3 className="sub">Favourite ocean animals</h3>
+        <div className="choice-grid" style={{gridTemplateColumns:'repeat(3,1fr)'}}>{ANIMAL_OPTS.map(a => <button key={a.k} className={"emoji-card"+(d.interests.includes(a.k)?' sel':'')} onClick={()=>{playTap();toggleArr('interests',a.k);}}><span className="e">{a.e}</span><span className="l">{a.l}</span></button>)}</div>
+        <h3 className="sub">Sensory settings</h3>
+        {[['sensoryMode','Reduced animation mode'],['quietMode','Quiet mode (lower volume)'],['noSuddenSounds','No sudden sounds'],['highContrast','High contrast mode']].map(([k,l]) => (
+          <div className="toggle-row" key={k}><span>{l}</span><div className={"toggle"+(d[k]?' on':'')} onClick={()=>{playTap();set({[k]:!d[k]});}}><div className="knob" /></div></div>
+        ))}
+        <h3 className="sub">Daily session time limit</h3>
+        <div className="row">{[15,20,30,45].map(m => <button key={m} className={"choice"+(d.sessionTimeLimit===m?' sel':'')} style={{flex:1,justifyContent:'center'}} onClick={()=>{playTap();set({sessionTimeLimit:m});}}>{m} min</button>)}</div>
+      </div>}
+
+      {step===4 && <div className="card">
+        <h3 className="sub">Companion name</h3>
+        <label className="fld"><input className="input" value={d.companionName} onChange={e=>set({companionName:e.target.value})} placeholder="Shelly" /></label>
+        <h3 className="sub">Companion type</h3>
+        <div className="choice-grid" style={{gridTemplateColumns:'repeat(3,1fr)'}}>{COMPANION_LIST.map(c => <button key={c.id} className={"emoji-card"+(d.companionType===c.id?' sel':'')} onClick={()=>{playTap();set({companionType:c.id});}}><span className="e">{c.emoji}</span><span className="l">{c.label}</span></button>)}</div>
+        <h3 className="sub">Personality</h3>
+        <div className="row">{[['playful','Playful 🎉'],['calm','Calm 🌿'],['adventurous','Adventurous 🗺️']].map(([k,l]) => <button key={k} className={"choice"+(d.personality===k?' sel':'')} style={{flex:1,justifyContent:'center'}} onClick={()=>{playTap();set({personality:k});}}>{l}</button>)}</div>
+        <h3 className="sub">Voice</h3>
+        <div className="row">{[[false,'Female'],[true,'Male']].map(([v,l]) => <button key={l} className={"choice"+(d.voiceMale===v?' sel':'')} style={{flex:1,justifyContent:'center'}} onClick={()=>{playTap();set({voiceMale:v});speak("Hello "+(d.childName||'friend')+"!",{male:v});}}>{l}</button>)}</div>
+      </div>}
+
+      {step===5 && <div className="card">
+        <h3 className="sub">Your role is to cheer {d.childName||'your child'} on at home!</h3>
+        <div className="tip-card"><div className="tt">⏳ Give time</div><div className="tb">Wait five seconds after asking. The pause gives space to communicate.</div></div>
+        <div className="tip-card"><div className="tt">🎉 Celebrate effort</div><div className="tb">Every sound, point, or attempt is a win. Praise the trying, not just the answer.</div></div>
+        <div className="tip-card"><div className="tt">🛁 Practice in real life</div><div className="tb">Use the same words at bath time and dinner. Real-life practice makes language stick.</div></div>
+        <button className="btn gold" style={{width:'100%', fontSize:24, minHeight:64}} onClick={finish}>Let's go! 🌊</button>
+      </div>}
+
+      <div className="row" style={{marginTop:18}}>
+        {step>1 && <button className="btn ghost" onClick={back}>← Back</button>}
+        <div className="spacer" />
+        {step<5 && <button className="btn" onClick={next} disabled={step===1 && !d.childName.trim()}>Next →</button>}
+      </div>
+    </div>
+  );
+}
+
+/* ============================ STAGE / PROGRESS LOGIC ============================ */
+function recordAttempt(update, { word, success, modality='speech', activity }) {
+  update(prev => {
+    const next = {...prev};
+    next.totalAttempts = (prev.totalAttempts||0) + 1;
+    next.stageProgress = {...prev.stageProgress};
+    next.stageProgress.attempts = (prev.stageProgress.attempts||0)+1;
+    if (!next.stageProgress.activities.includes(activity)) next.stageProgress.activities = [...next.stageProgress.activities, activity];
+    const wa = prev.wordsAttempted.map(w=>({...w}));
+    let entry = wa.find(w => w.word===word);
+    if (!entry) { entry = { word, count:0, successes:0, modality, date:today() }; wa.push(entry); }
+    entry.count++; entry.modality = modality;
+    if (success) { entry.successes++; next.stageProgress.successes=(prev.stageProgress.successes||0)+1; }
+    next.wordsAttempted = wa;
+    if (success && entry.successes>=3 && !prev.wordsMastered.find(m=>m.word===word)) {
+      next.wordsMastered = [...prev.wordsMastered, { word, date:today() }];
+      next.wordsAttempted = wa.filter(w=>w.word!==word);
+      const ml = [...prev.milestones];
+      if ((prev.wordsMastered||[]).length===0) ml.push({label:"First word mastered: "+word, date:today()});
+      next.milestones = ml;
+    }
+    return next;
+  });
+}
+function maybeAdvanceStage(update) {
+  update(prev => {
+    const sp = prev.stageProgress;
+    const opp = sp.attempts||0, succ = sp.successes||0;
+    const ratioOk = opp>=5 && succ/opp >= 0.6;
+    const sessionsOk = (sp.sessions||0) >= 2;
+    const actsOk = (sp.activities||[]).length >= 2;
+    if (ratioOk && sessionsOk && actsOk && prev.stage < 6) {
+      const newStage = prev.stage + 1;
+      const next = {...prev, stage:newStage, stageProgress:{attempts:0,successes:0,sessions:0,activities:[]}};
+      next.milestones = [...prev.milestones, {label:"Reached Stage "+newStage+": "+STAGES[newStage-1].name, date:today()}];
+      const zu = [...prev.zonesUnlocked];
+      ZONES.forEach(z => { if (z.stage>0 && z.stage<=newStage && !zu.includes(z.id)) zu.push(z.id); });
+      next.zonesUnlocked = zu;
+      return next;
+    }
+    return prev;
+  });
+}
+function grantReward(update) {
+  let granted = null;
+  update(prev => {
+    const have = new Set(prev.aquarium.map(a=>a.type));
+    const pool = REWARD_POOL.filter(r=>!have.has(r.type));
+    if (!pool.length) return prev;
+    granted = pool[Math.floor(Math.random()*pool.length)];
+    return {...prev, aquarium:[...prev.aquarium, {...granted, date:today()}], _sessionRewards:(prev._sessionRewards||0)+1};
+  });
+  return granted;
+}
+
+/* ============================ WORLD ============================ */
+function World({ st, update, game, setGame, goParent }) {
+  const [companionMsg, setCompanionMsg] = useState("");
+  const [showAquarium, setShowAquarium] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [rewardModal, setRewardModal] = useState(null);
+  const limitSec = st.sessionTimeLimit*60;
+  const sessionStarted = useRef(false);
+  const goodbyeSaid = useRef(false), warnSaid = useRef(false);
+
   useEffect(() => {
-    if (apiKey) saveState({ apiKey, level, stars, totalStars, levelProgress });
-  }, [apiKey, level, stars, totalStars, levelProgress]);
+    if (sessionStarted.current) return;
+    sessionStarted.current = true;
+    update(prev => ({...prev, totalSessions:(prev.totalSessions||0)+1, stageProgress:{...prev.stageProgress, sessions:(prev.stageProgress.sessions||0)+1}, lastSessionDate:today(), _sessionRewards:0}));
+    const last = (st.sessionHistory||[]).slice(-1)[0];
+    const greet = st.personality==='calm' ? "I'm so happy to see you." : st.personality==='adventurous' ? "Ready for an adventure?" : "Yay, you're here!";
+    let msg = `Hi ${st.childName}! 👋 ${greet}`;
+    if (last && last.summary) msg = `Welcome back, ${st.childName}! 🌊 Last time, ${last.summary} ${greet}`;
+    setCompanionMsg(msg);
+    setTimeout(()=>speak(msg,{male:st.voiceMale}), 500);
+  }, []);
 
-  const levelData = LEVELS[level - 1];
-
-  // ── Talk scene setup ──
+  useEffect(() => { const id = setInterval(()=>setElapsed(e=>e+1), 1000); return ()=>clearInterval(id); }, []);
   useEffect(() => {
-    if (view !== 'talk' || !canvasRef.current) return;
-    const cleanup = setupTalkScene(canvasRef.current, sceneState);
-    return cleanup;
-  }, [view]);
+    if (elapsed === limitSec-300 && !warnSaid.current) { warnSaid.current=true; const m=`Five more minutes, ${st.childName}! Let's have some fun!`; setCompanionMsg(m); speak(m,{male:st.voiceMale}); }
+    if (elapsed >= limitSec && !goodbyeSaid.current) {
+      goodbyeSaid.current = true;
+      const m = `Great work today, ${st.childName}! 🌟 Time for a rest. See you next time!`;
+      setCompanionMsg(m); speak(m,{male:st.voiceMale}); endSession();
+    }
+  }, [elapsed]);
 
-  // Fish scene setup
-  useEffect(() => {
-    if (view !== 'fishgame' || !canvasRef.current) return;
-    const fishCount = levelData.fish;
-    setFishMoved(0);
-    let done = false;
-    const cleanup = setupFishScene(canvasRef.current, {
-      fishCount,
-      onComplete: (moved) => {
-        setFishMoved(moved);
-        if (moved >= fishCount && !done) {
-          done = true;
-          setTimeout(() => levelUp(), 1000);
-        }
-      }
+  function endSession() {
+    update(prev => {
+      const sp = prev.stageProgress;
+      const summary = `you played and tried ${sp.attempts||0} words!`;
+      const hist = [...(prev.sessionHistory||[]), { date:today(), duration:Math.max(1,Math.round(elapsed/60)), attempts:sp.attempts||0, successes:sp.successes||0, stage:prev.stage, rewards: prev._sessionRewards||0, summary }];
+      return {...prev, sessionHistory:hist, lastSessionSummary:summary};
     });
-    return cleanup;
-  }, [view]);
-
-  // ── Greeting on enter talk ──
-  useEffect(() => {
-    if (view === 'talk' && messages.length === 0 && apiKey) {
-      const timeout = setTimeout(() => oralSpeak(getGreeting(level)), 1200);
-      return () => clearTimeout(timeout);
-    }
-  }, [view, apiKey]);
-
-  function getGreeting(lvl) {
-    const greetings = [
-      "Hellooo! I'm Oral! Can you make any sound for me? Even just say ooh! 🎉",
-      "Hi there! I'm so happy to see you! Can you say hello to me? 👋",
-      "Hello hello! I'm Oral! What's your favourite colour? Tell me two words! 🌈",
-      "Yay, you're here! I'm Oral! What is your favourite food? Tell me! 🍎",
-      "Amazing, you came to play! I'm Oral! Tell me about your favourite animal! 🐬",
-      "Wonderful! I'm Oral! Tell me something you did today — a whole sentence! ✨",
-      "Incredible! I'm Oral! Tell me about your best ever day! 🌟",
-      "Wow, fantastic! I'm Oral! Tell me a short story about a fish! 📖",
-      "Oh wow, you're amazing! I'm Oral! What do you love most in the whole world? 🎤",
-      "You are INCREDIBLE! I'm Oral — and so are you! What shall we talk about today? 🏆",
-    ];
-    return greetings[lvl - 1];
+    maybeAdvanceStage(update);
   }
 
-  function oralSpeak(text) {
-    window.speechSynthesis && window.speechSynthesis.cancel();
-    setSpeaking(true);
-    setLastText(text);
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.88;
-    utter.pitch = 1.1;
-    utter.volume = 1;
-    utter.onend = () => setSpeaking(false);
-    utter.onerror = () => setSpeaking(false);
-    ttsRef.current = utter;
-    window.speechSynthesis && window.speechSynthesis.speak(utter);
-  }
+  const fmtTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  const nearLimit = elapsed >= limitSec-300;
 
-  async function sendMessage(userText) {
-    if (!userText.trim() || !apiKey) return;
-    const wordCount = userText.trim().split(/\s+/).length;
-    const starsEarned = wordCount >= 5 ? 3 : wordCount >= 2 ? 2 : 1;
+  const onGameReward = useCallback(() => {
+    const r = grantReward(update);
+    playReward();
+    if (r) { setRewardModal(r); const m = `Wow! You unlocked ${r.name}! 🎉`; setTimeout(()=>speak(m,{male:st.voiceMale}),300); }
+  }, [update, st.voiceMale]);
 
-    setSessionTurns(t => t + 1);
-    setSessionWords(w => w + wordCount);
+  const onGameDone = useCallback(() => {
+    maybeAdvanceStage(update);
+    setGame(null);
+    const m = st.personality==='calm' ? "That was lovely. What shall we do now?" : "That was so much fun! Pick something else!";
+    setCompanionMsg(m); speak(m,{male:st.voiceMale});
+  }, [update, st.personality, st.voiceMale]);
 
-    const newMessages = [...messages, { role: 'user', content: userText }];
-    setMessages(newMessages);
+  if (showAquarium) return <Aquarium st={st} onBack={()=>setShowAquarium(false)} />;
+  if (game) { const GameComp = GAME_MAP[game]; return <GameComp st={st} update={update} onReward={onGameReward} onDone={onGameDone} onExit={()=>setGame(null)} />; }
 
-    // Show star burst
-    const burstId = Date.now();
-    setStarBursts(bs => [...bs, { id: burstId, count: starsEarned }]);
-    setTimeout(() => setStarBursts(bs => bs.filter(b => b.id !== burstId)), 900);
+  const band = st.ageBand;
+  let nav = [
+    {id:'feed',e:'🐬',l:'Feed'},{id:'pop',e:'🫧',l:'Pop'},{id:'find',e:'🐢',l:'Find'},
+    {id:'name',e:'🦑',l:'Name'},{id:'count',e:'🐚',l:'Count'},{id:'colour',e:'🎨',l:'Colour'},{id:'speak',e:'🎤',l:'Speak'},
+  ];
+  if (band>=2) nav = [...nav, {id:'story',e:'🌊',l:'Story'},{id:'whale',e:'🐳',l:'Help'}];
+  if (band>=3) nav = [...nav, {id:'scenario',e:'🎭',l:'Scenario'}];
+  nav.push({id:'parent',e:'🔒',l:'Parent'});
 
-    const newStars = stars + starsEarned;
-    setStars(newStars);
-    setTotalStars(ts => ts + starsEarned);
+  const handleNav = (id) => { playTap(); if (id==='parent') return goParent(); setGame(id); };
 
-    try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 200,
-          system: buildSystemPrompt(level),
-          messages: newMessages,
-        }),
-      });
-      const data = await resp.json();
-      const reply = data.content?.[0]?.text || "Wonderful! You are amazing! Can you tell me more?";
-      setMessages(m => [...m, { role: 'assistant', content: reply }]);
-      oralSpeak(reply);
-    } catch(e) {
-      const fallback = "Amazing! You are doing so well! Can you tell me something else?";
-      setMessages(m => [...m, { role: 'assistant', content: fallback }]);
-      oralSpeak(fallback);
-    }
-
-    if (newStars >= levelData.stars) {
-      setTimeout(() => {
-        setStars(0);
-        setView('fishgame');
-      }, 2000);
-    }
-  }
-
-  function levelUp() {
-    setCelebrating(true);
-    const newProgress = [...levelProgress];
-    newProgress[level - 1] = 1;
-    setLevelProgress(newProgress);
-    const nextLevel = Math.min(level + 1, 10);
-    setCelebrationMsg(level >= 10
-      ? "🏆 You are an Oral Master! Incredible achievement!"
-      : `🎉 Level ${level} complete! Welcome to Level ${nextLevel} — ${LEVELS[nextLevel-1].name}!`
-    );
-    setShowCelebration(true);
-    setTimeout(() => {
-      setLevel(nextLevel);
-      setMessages([]);
-      setStars(0);
-      setCelebrating(false);
-      setShowCelebration(false);
-      setView('talk');
-    }, 5000);
-  }
-
-  function startMic() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setTypingMode(true);
-      return;
-    }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SR();
-    rec.continuous = false;
-    rec.interimResults = false;
-    rec.lang = 'en-GB';
-    rec.onstart = () => setListening(true);
-    rec.onend = () => setListening(false);
-    rec.onresult = (e) => {
-      const text = e.results[0][0].transcript;
-      sendMessage(text);
-    };
-    rec.onerror = () => setListening(false);
-    recognitionRef.current = rec;
-    rec.start();
-  }
-
-  function stopMic() {
-    recognitionRef.current?.stop();
-    setListening(false);
-  }
-
-  function handleApiKeySubmit() {
-    if (!apiKeyInput.trim()) return;
-    setApiKey(apiKeyInput.trim());
-    setShowApiKeyScreen(false);
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  if (showApiKeyScreen) {
-    return (
-      <div className="apikey-screen">
-        <div className="apikey-box">
-          <div className="welcome-fish">🐠</div>
-          <div className="apikey-title">Welcome to Oral!</div>
-          <p style={{color:'#a0a0c0',marginBottom:20,fontSize:'.95rem',lineHeight:1.6}}>
-            Oral uses Claude AI to have real conversations.<br/>
-            Please enter your Anthropic API key to get started.
-          </p>
-          <input
-            className="apikey-input"
-            type="password"
-            placeholder="sk-ant-api..."
-            value={apiKeyInput}
-            onChange={e => setApiKeyInput(e.target.value)}
-            onKeyDown={e => e.key==='Enter' && handleApiKeySubmit()}
-          />
-          <button className="btn btn-primary" style={{width:'100%'}} onClick={handleApiKeySubmit}>
-            Let's Begin! 🚀
-          </button>
-          <div className="apikey-note">
-            Your key is stored locally on this device only and never sent anywhere except the Anthropic API.
-            Get a key at console.anthropic.com
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <div className="badge">Hi {st.childName}! 👋</div>
+        <div className={"badge"+(nearLimit?' warn':'')}>⏱ {fmtTime(elapsed)} / {st.sessionTimeLimit}:00</div>
+        <div className="badge" onClick={()=>{playTap();setShowAquarium(true);}} style={{cursor:'pointer'}}>🐟 {st.aquarium.length} friends</div>
+      </div>
+      <div className="center" style={{minHeight:'100vh', padding:'80px 16px 120px', justifyContent:'flex-end', gap:20}}>
+        <div className="speech-bubble" style={{marginBottom:8}}>{companionMsg}</div>
+        <div className="companion" onClick={()=>{playTap();speak(companionMsg,{male:st.voiceMale});}}>{COMPANIONS[st.companionType]||'🐢'}</div>
+        <div className="muted">{st.companionName} • Stage {st.stage}: {STAGES[st.stage-1].name}</div>
+      </div>
+      <div className="navbar">{nav.map(n => <button key={n.id} className="nav-btn" onClick={()=>handleNav(n.id)}><span className="ne">{n.e}</span>{n.l}</button>)}</div>
+      {rewardModal && (
+        <div className="center" style={{position:'fixed',inset:0,background:'rgba(6,20,40,.92)',zIndex:40,padding:24}} onClick={()=>setRewardModal(null)}>
+          <Confetti go={true} />
+          <div className="card solid center" style={{maxWidth:380,gap:12}}>
+            <div style={{fontSize:90}}>{rewardModal.emoji}</div>
+            <h2 className="glow-title" style={{fontSize:36}}>New Friend!</h2>
+            <div style={{fontSize:24,fontWeight:800}}>{rewardModal.name}</div>
+            <div className="muted" style={{textAlign:'center'}}>{rewardModal.desc}</div>
+            <button className="btn gold" onClick={()=>setRewardModal(null)}>Yay! 🎉</button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================ GAME SHELL ============================ */
+function GameShell({ title, emoji, children, onExit, companionLine, st }) {
+  useEffect(()=>{ if(companionLine) setTimeout(()=>speak(companionLine,{male:st.voiceMale}),300); },[companionLine]);
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 18px'}} onClick={()=>{playTap();onExit();}}>← Back</button>
+        <div className="badge">{emoji} {title}</div>
+        <div style={{width:80}} />
       </div>
-    );
-  }
+      <div className="scroll-pad center" style={{justifyContent:'flex-start', minHeight:'100vh', paddingTop:80}}>{children}</div>
+    </div>
+  );
+}
 
-  if (view === 'welcome') {
-    return (
-      <div className="welcome-bg">
-        <div className="welcome-fish">🐠</div>
-        <div className="welcome-title">Oral</div>
-        <div className="welcome-sub">A magical speech companion for children.<br/>Talk to Oral, earn stars, play the fish game!</div>
-        <div style={{display:'flex',gap:16,flexWrap:'wrap',justifyContent:'center',marginTop:8}}>
-          <button className="btn btn-primary" onClick={() => setView('wizard')}>Let's Get Started! 🌟</button>
-          <button className="btn" style={{background:'rgba(255,255,255,.1)',color:'#fff'}} onClick={() => { setDashUnlocked(false); setView('dashboard'); }}>
-            📊 Parent / Carer Area
-          </button>
+function useGameFlow(st, update, onReward, activity, totalRounds) {
+  const [round, setRound] = useState(0);
+  const [done, setDone] = useState(false);
+  const [confetti, setConfetti] = useState(false);
+  const handleTier = (tier, word) => {
+    const success = tier==='exact' || tier==='close';
+    recordAttempt(update, { word, success, modality: st.pecsMode?'touch':'speech', activity });
+    let line;
+    if (tier==='exact') { line = `Perfect! You said "${word}"! 🎉`; playCelebration(); setConfetti(true); }
+    else if (tier==='close') { line = `Great trying! That was so close! 🌟`; playCelebration(); setConfetti(true); }
+    else if (tier==='any') { line = `Lovely sound! Let's try again. You can do it!`; playPop(); }
+    else { line = `Let's try together. ${st.companionName} says it like this!`; }
+    speak(line.replace(/[🎉🌟]/g,''), {male:st.voiceMale});
+    setTimeout(()=>setConfetti(false), 1800);
+    return { success, line };
+  };
+  const nextRound = () => { if (round+1 >= totalRounds) { setDone(true); onReward(); } else setRound(r=>r+1); };
+  return { round, done, confetti, handleTier, nextRound, setDone };
+}
+
+function CompletePanel({ st, onDone, label }) {
+  return (
+    <div className="center" style={{gap:16}}>
+      <div style={{fontSize:80}}>🏆</div>
+      <div className="speech-bubble">{label||`Amazing work, ${st.childName}! You finished! 🎉`}</div>
+      <button className="btn gold" style={{fontSize:22,minHeight:64}} onClick={()=>{playTap();onDone();}}>Done! 🌊</button>
+    </div>
+  );
+}
+
+function bankPecs(st, targetWord, targetEmoji) {
+  const bank = WORD_BANKS[st.stage] || WORD_BANKS[1];
+  const others = bank.filter(b=>b.word!==targetWord).sort(()=>Math.random()-0.5).slice(0,5).map(b=>({word:b.word,emoji:b.emoji}));
+  return [{word:targetWord,emoji:targetEmoji||'⭐'}, ...others].sort(()=>Math.random()-0.5);
+}
+
+/* ============================ GAME 1: FEED ============================ */
+function FeedGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 3;
+  const foods = [{w:"fish",e:"🐟"},{w:"seaweed",e:"🌿"},{w:"crab",e:"🦀"},{w:"shrimp",e:"🦐"}];
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'feed', ROUNDS);
+  const [fb, setFb] = useState("");
+  const target = foods[round % foods.length];
+  const band = st.ageBand;
+  let prompt = `What should we feed the dolphin? Can you say… ${target.w.toUpperCase()}?`;
+  if (band===2) prompt = `The dolphin is hungry! Can you say "${target.w}" and tell me about it?`;
+  if (band===3) prompt = `The dolphin wants something that swims in the sea — what is it? (Say "${target.w}")`;
+  const onResult = (said) => { const r = handleTier(matchTier(said,target.w), target.w); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900); };
+  const cards = foods.map(f=>({word:f.w,emoji:f.e}));
+  return (
+    <GameShell title="Feed the Dolphin" emoji="🐬" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:90}} className="companion">🐬</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 2: BUBBLE POP ============================ */
+function PopGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 5;
+  const sets = {
+    1: [{w:"blue",e:"💙"},{w:"red",e:"❤️"},{w:"green",e:"💚"},{w:"one",e:"1️⃣"},{w:"two",e:"2️⃣"},{w:"three",e:"3️⃣"}],
+    2: [{w:"blue fish",e:"🐟"},{w:"red crab",e:"🦀"},{w:"big whale",e:"🐋"},{w:"circle",e:"⭕"},{w:"star",e:"⭐"},{w:"green turtle",e:"🐢"}],
+    3: [{w:"bright blue",e:"💙"},{w:"tiny fish",e:"🐟"},{w:"giant whale",e:"🐋"},{w:"slippery seal",e:"🦭"},{w:"spiky pufferfish",e:"🐡"},{w:"shiny shell",e:"🐚"}],
+  };
+  const pool = sets[st.ageBand];
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'pop', ROUNDS);
+  const target = pool[round % pool.length];
+  const [fb, setFb] = useState("");
+  const prompt = `Pop the ${target.w.toUpperCase()} bubble! Say ${target.w}!`;
+  const onResult = (said) => { const tier=matchTier(said,target.w); const r = handleTier(tier, target.w); if(tier==='exact'||tier==='close')playPop(); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900); };
+  const cards = pool.map(p=>({word:p.w,emoji:p.e}));
+  return (
+    <GameShell title="Bubble Pop" emoji="🫧" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:70}}>🫧 {target.e} 🫧</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 3: FIND THE TURTLE ============================ */
+function FindGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 3;
+  const spots = {
+    1: [{w:"behind the coral",e:"🪸",say:"behind"},{w:"under the rock",e:"🪨",say:"under"},{w:"in the cave",e:"🕳️",say:"in"}],
+    2: [{w:"next to the shell",e:"🐚",say:"next to"},{w:"between the rocks",e:"🪨",say:"between"},{w:"on the left",e:"⬅️",say:"left"}],
+    3: [{w:"near the big purple rock",e:"🟣",say:"near the rock"},{w:"behind the tall green seaweed",e:"🌿",say:"behind the seaweed"},{w:"under the curvy yellow coral",e:"🪸",say:"under the coral"}],
+  };
+  const pool = spots[st.ageBand];
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'find', ROUNDS);
+  const target = pool[round % pool.length];
+  const [fb, setFb] = useState("");
+  const prompt = `Where is the turtle hiding? Can you look ${target.w}? Say "${target.say}"!`;
+  const onResult = (said) => { const r = handleTier(matchTier(said,target.say), target.say); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900); };
+  const cards = pool.map(p=>({word:p.say,emoji:p.e,label:p.say}));
+  return (
+    <GameShell title="Find the Turtle" emoji="🐢" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:70}}>{target.e} … 🐢?</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 4: NAME THE ANIMAL ============================ */
+function NameGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 5;
+  const animals = {
+    1: [{w:"fish",e:"🐟",fact:"Fish breathe underwater with their gills!"},{w:"turtle",e:"🐢",fact:"Turtles can live for over 100 years!"},{w:"crab",e:"🦀",fact:"Crabs walk sideways!"},{w:"whale",e:"🐋",fact:"Whales are the biggest animals on Earth!"},{w:"octopus",e:"🐙",fact:"An octopus has three hearts!"}],
+    2: [{w:"seahorse",e:"🐚",fact:"Daddy seahorses carry the babies!"},{w:"jellyfish",e:"🪼",fact:"Jellyfish have no brain or bones!"},{w:"pufferfish",e:"🐡",fact:"Pufferfish puff up to stay safe!"},{w:"seal",e:"🦭",fact:"Seals can sleep underwater!"},{w:"squid",e:"🦑",fact:"Squid squirt ink to hide!"}],
+    3: [{w:"manta ray",e:"🐠",fact:"Manta rays can be wider than a car!"},{w:"lobster",e:"🦞",fact:"Lobsters taste with their legs!"},{w:"starfish",e:"⭐",fact:"Starfish can grow back lost arms!"},{w:"dolphin",e:"🐬",fact:"Dolphins call each other by name!"},{w:"shark",e:"🦈",fact:"Sharks never run out of teeth!"}],
+  };
+  const pool = animals[st.ageBand];
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'name', ROUNDS);
+  const target = pool[round % pool.length];
+  const [fb, setFb] = useState("");
+  let prompt = `What is this animal? Can you name it?`;
+  if (st.ageBand===3) prompt = `What do you know about this animal? What is it called?`;
+  const onResult = (said) => { const tier=matchTier(said,target.w); const r = handleTier(tier, target.w); setFb(r.line + (tier!=='silence'?(" Fun fact: "+target.fact):"")); speak(target.fact,{male:st.voiceMale}); setTimeout(()=>{ setFb(""); nextRound(); }, 2400); };
+  const cards = pool.map(p=>({word:p.w,emoji:p.e}));
+  return (
+    <GameShell title="Name the Animal" emoji="🦑" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:90}} className="companion">{target.e}</div>
+        {fb && <div className="badge" style={{fontSize:15,padding:'12px 20px',maxWidth:420,textAlign:'center'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 5: COUNT THE SHELLS ============================ */
+function CountGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 4;
+  const maxBtn = st.ageBand===1 ? 6 : 12;
+  const maxRange = st.ageBand===1 ? 10 : 20;
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'count', ROUNDS);
+  const count = useMemo(()=> 1 + Math.floor(Math.random()*Math.min(maxBtn, maxRange)), [round]);
+  const numberWords = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"];
+  const target = numberWords[count];
+  const [fb, setFb] = useState("");
+  const prompt = `How many shells can you see? Count them and say the number!`;
+  const onResult = (said) => {
+    let tier='silence';
+    if (said) { const s=said.toLowerCase(); tier = (s.includes(target)||s.includes(String(count))) ? 'exact' : 'close'; }
+    const r = handleTier(tier, target); setFb(r.line + (tier==='exact'?'':` It was ${count}!`)); setTimeout(()=>{ setFb(""); nextRound(); }, 2100);
+  };
+  const cards = Array.from({length:maxBtn},(_,i)=>({word:String(i+1),label:String(i+1)}));
+  return (
+    <GameShell title="Count the Shells" emoji="🐚" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:40, maxWidth:340, textAlign:'center', lineHeight:1.4}}>{"🐚 ".repeat(count)}</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 6: HELP THE WHALE ============================ */
+function WhaleGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 3;
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'whale', ROUNDS);
+  const dirs = st.ageBand===3
+    ? [{w:"left then up",say:"left"},{w:"right then down",say:"right"},{w:"up then left",say:"up"}]
+    : [{w:"left",say:"left"},{w:"right",say:"right"},{w:"up",say:"up"}];
+  const target = dirs[round % dirs.length];
+  const [fb, setFb] = useState("");
+  const prompt = st.ageBand===3
+    ? `The whale needs multi-step directions! Should it go ${target.w}? Say the directions!`
+    : `Which way should the whale go to find the treasure? Say "${target.say}"!`;
+  const onResult = (said) => { const r = handleTier(matchTier(said,target.say), target.say); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900); };
+  const cards = [{word:"left",label:"⬅️ left"},{word:"right",label:"➡️ right"},{word:"up",label:"⬆️ up"},{word:"down",label:"⬇️ down"}];
+  return (
+    <GameShell title="Help the Whale" emoji="🐳" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:80}} className="companion">🐳</div>
+        <div style={{fontSize:30}}>⬅️ ⬆️ ➡️ ⬇️</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 7: COLOUR THE REEF ============================ */
+function ColourGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 4;
+  const colours = [{w:"red",c:"#ff6b6b"},{w:"blue",c:"#3b82f6"},{w:"green",c:"#22c55e"},{w:"yellow",c:"#ffd700"},{w:"purple",c:"#a855f7"},{w:"orange",c:"#fb923c"}];
+  const elements = ["coral","seaweed","shell","fish"];
+  const elEmoji = {coral:'🪸',seaweed:'🌿',shell:'🐚',fish:'🐟'};
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'colour', ROUNDS);
+  const [fills, setFills] = useState({});
+  const [fb, setFb] = useState("");
+  const element = elements[round % elements.length];
+  let prompt = `What colour shall we make the ${element}? Say a colour!`;
+  if (st.ageBand>=2 && round===1) prompt = `If we mix blue and yellow, what colour do we get? Say "green"!`;
+  const onResult = (said) => {
+    const matched = colours.find(c => said && said.toLowerCase().includes(c.w));
+    const tier = matched ? 'exact' : (said ? 'any' : 'silence');
+    const word = matched ? matched.w : (st.ageBand>=2&&round===1?'green':'colour');
+    const r = handleTier(tier, word);
+    if (matched) setFills(f=>({...f,[element]:matched.c}));
+    setFb(r.line + (matched?` The ${element} is ${matched.w} now! 🎨`:'')); setTimeout(()=>{ setFb(""); nextRound(); }, 2000);
+  };
+  const cards = colours.map(c=>({word:c.w,label:c.w,style:{background:c.c,color:'#fff'}}));
+  return (
+    <GameShell title="Colour the Reef" emoji="🎨" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} label={`Beautiful reef, ${st.childName}! 🎨🌊`} /> : (<>
+        <div className="row" style={{justifyContent:'center', gap:16, fontSize:50}}>
+          {elements.map(el => <span key={el} style={{filter:`drop-shadow(0 0 12px ${fills[el]||'transparent'})`, opacity: fills[el]?1:0.5, color:fills[el]}}>{elEmoji[el]}</span>)}
         </div>
-        <div style={{marginTop:16,fontSize:'.8rem',color:'rgba(255,255,255,.35)'}}>
-          Oral v2.0 — Speech & Language Companion
-        </div>
+        {fb && <div className="badge" style={{fontSize:16,padding:'12px 20px',maxWidth:420,textAlign:'center'}}>{fb}</div>}
+        <div className="muted">Colouring the {element} • {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 8: STORY TIME ============================ */
+function StoryGame({ st, update, onReward, onDone, onExit }) {
+  const TURNS = 5;
+  const scenes = ["🐢🌊","🪸🐠","💎📦","🦈😮","🐙🤝"];
+  const prompts = [
+    "Once upon a time, a little turtle was exploring the deep ocean… What did the turtle see?",
+    "The turtle swam past a colourful coral reef. Who did the turtle meet there?",
+    "Then the turtle found a shiny treasure chest! What was inside?",
+    "Suddenly, a big shape appeared in the water! What happened next?",
+    "The friends all swam home together. How did the story end?"
+  ];
+  const [turn, setTurn] = useState(0);
+  const [done, setDone] = useState(false);
+  const [fb, setFb] = useState("");
+  const [confetti, setConfetti] = useState(false);
+  useEffect(()=>{ setTimeout(()=>speak(prompts[turn],{male:st.voiceMale}),400); },[turn]);
+  const handle = (said) => {
+    const has = !!said;
+    recordAttempt(update, { word: "story turn "+(turn+1), success: has, modality: st.pecsMode?'touch':'speech', activity:'story' });
+    const line = has ? `Ooh, ${said}! And then ${st.companionName} smiled and the story went on… 🌟` : `That's okay! ${st.companionName} says: and then something wonderful happened!`;
+    setFb(line); if(has){ playCelebration(); setConfetti(true); } speak(line.replace(/[🌟]/g,''),{male:st.voiceMale});
+    setTimeout(()=>{ setConfetti(false); setFb(""); if (turn+1>=TURNS) { setDone(true); onReward(); } else setTurn(t=>t+1); }, 2400);
+  };
+  const cards = [{e:'🐠',w:'a fish'},{e:'💎',w:'treasure'},{e:'🐙',w:'an octopus'},{e:'🦈',w:'a shark'},{e:'🪸',w:'coral'},{e:'⭐',w:'a star'}].map(c=>({word:c.w,emoji:c.e}));
+  return (
+    <GameShell title="Story Time" emoji="🌊" onExit={onExit} st={st}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} label={`What a wonderful story, ${st.childName}! 📖🌊`} /> : (<>
+        <div style={{fontSize:64}}>{scenes[turn]}</div>
+        {fb && <div className="badge" style={{fontSize:16,padding:'12px 20px',maxWidth:440,textAlign:'center'}}>{fb}</div>}
+        <div className="muted">Story turn {turn+1} of {TURNS}</div>
+        <MicPanel st={st} prompt={prompts[turn]} onResult={handle} onSkip={()=>{ if(turn+1>=TURNS){setDone(true);onReward();} else setTurn(t=>t+1); }} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 9: SOCIAL SCENARIO ============================ */
+function ScenarioGame({ st, update, onReward, onDone, onExit }) {
+  const allScenarios = [...SCENARIOS, ...(st.customActivities||[]).filter(a=>a.type==='scenario').map(a=>({title:a.title,lines:a.lines}))];
+  const [picked, setPicked] = useState(null);
+  const [exchange, setExchange] = useState(0);
+  const [done, setDone] = useState(false);
+  const [fb, setFb] = useState("");
+  const [confetti, setConfetti] = useState(false);
+  const EXCHANGES = 4;
+  useEffect(()=>{ if(picked) setTimeout(()=>speak(picked.lines[exchange].replace(/\[CHILD\]/g,st.childName),{male:st.voiceMale}),400); },[picked,exchange]);
+  const handle = (said) => {
+    const has = !!said;
+    recordAttempt(update, { word: picked.title.slice(0,20), success: has, modality: st.pecsMode?'touch':'speech', activity:'scenario' });
+    const line = has ? `That's a wonderful thing to say! ${st.companionName} is proud of you. 🌟` : `It can feel tricky. ${st.companionName} would say: "It's nice to meet you!"`;
+    setFb(line); if(has){ playCelebration(); setConfetti(true); } speak(line.replace(/[🌟]/g,''),{male:st.voiceMale});
+    setTimeout(()=>{ setConfetti(false); setFb(""); if (exchange+1>=EXCHANGES) { setDone(true); onReward(); } else setExchange(e=>e+1); }, 2400);
+  };
+  const cards = ["Hello!","Can I play?","My name is "+st.childName,"Yes please","No thank you","I feel happy"].map(o=>({word:o,label:o}));
+  if (!picked) return (
+    <GameShell title="Social Scenario" emoji="🎭" onExit={onExit} st={st} companionLine="Let's practice talking with people! Pick a scene.">
+      <div className="choice-grid" style={{width:'100%',maxWidth:520}}>{allScenarios.map((s,i)=><button key={i} className="choice" onClick={()=>{playTap();setPicked(s);}}>🎭 {s.title}</button>)}</div>
+    </GameShell>
+  );
+  return (
+    <GameShell title={picked.title} emoji="🎭" onExit={onExit} st={st}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} label={`You practiced so well, ${st.childName}! 🎭🌟`} /> : (<>
+        <div style={{fontSize:64}}>🧒💬</div>
+        {fb && <div className="badge" style={{fontSize:15,padding:'12px 20px',maxWidth:440,textAlign:'center'}}>{fb}</div>}
+        <div className="muted">Exchange {exchange+1} of {EXCHANGES}</div>
+        <MicPanel st={st} prompt={picked.lines[exchange].replace(/\[CHILD\]/g,st.childName)} onResult={handle} onSkip={()=>{ if(exchange+1>=EXCHANGES){setDone(true);onReward();} else setExchange(e=>e+1); }} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ SPEAK (free practice) ============================ */
+function SpeakGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 5;
+  const bank = useMemo(()=>{ const b=[...(WORD_BANKS[st.stage]||WORD_BANKS[1])]; const cv=(st.customVocabulary||[]).map(w=>({word:w,emoji:'⭐'})); return [...cv,...b].sort(()=>Math.random()-0.5); },[st.stage]);
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'speak', ROUNDS);
+  const target = bank[round % bank.length];
+  const [fb, setFb] = useState("");
+  const level = st.communicationLevel;
+  let prompt;
+  if (level===1) prompt = `Can you say… ${target.word.toUpperCase()}? ${st.companionName} will say it first!`;
+  else if (level===2) prompt = `It's a ___ . Can you say "${target.word}"?`;
+  else if (level===3) prompt = `What do you see? Can you say "${target.word}"?`;
+  else if (level===4) prompt = `Tell me about this! Try saying "${target.word}".`;
+  else prompt = `Let's chat! Can you use "${target.word}" in a sentence?`;
+  useEffect(()=>{ if(level===1) setTimeout(()=>speak(target.word,{male:st.voiceMale}),900); },[round]);
+  const onResult = (said) => {
+    let tier = matchTier(said, target.word);
+    if (level===1 && tier==='any') tier='close';
+    const r = handleTier(tier, target.word); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900);
+  };
+  const cards = bankPecs(st, target.word, target.emoji);
+  return (
+    <GameShell title="Speak Time" emoji="🎤" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:90}} className="companion">{target.emoji}</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Word {round+1} of {ROUNDS} • Level {level}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+const GAME_MAP = {
+  feed: FeedGame, pop: PopGame, find: FindGame, name: NameGame, count: CountGame,
+  whale: WhaleGame, colour: ColourGame, story: StoryGame, scenario: ScenarioGame, speak: SpeakGame
+};
+
+/* ============================ AQUARIUM ============================ */
+function Aquarium({ st, onBack }) {
+  const byZone = ZONES.filter(z => st.zonesUnlocked.includes(z.id));
+  const locked = ZONES.filter(z => !st.zonesUnlocked.includes(z.id));
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 18px'}} onClick={()=>{playTap();onBack();}}>← Back</button>
+        <div className="badge">🐟 Aquarium</div>
+        <div style={{width:80}} />
       </div>
-    );
-  }
-
-  if (view === 'wizard') {
-    return (
-      <div className="wizard-wrap">
-        <div className="wizard-box">
-          <div className="wizard-title">🌟 Let's Find the Right Starting Level</div>
-          {wizardChoice === null ? (
-            <>
-              <div className="wizard-q">Which best describes your child's speech right now?</div>
-              {WIZARD_OPTIONS.map((opt, i) => (
-                <div
-                  key={i}
-                  className={`wizard-option${wizardChoice === i ? ' selected' : ''}`}
-                  onClick={() => { setWizardChoice(i); setWizardLevel(i + 1); }}
-                >
-                  <div className="wizard-option-num">{i + 1}</div>
-                  <div className="wizard-option-text">{opt}</div>
-                </div>
-              ))}
-            </>
-          ) : (
-            <div className="level-confirm">
-              <div style={{fontSize:'1rem',color:'#a0a0c0',marginBottom:8}}>We recommend starting at</div>
-              <div className="level-name">{LEVELS[wizardLevel-1].emoji} Level {wizardLevel} — {LEVELS[wizardLevel-1].name}</div>
-              <div className="level-desc">{LEVELS[wizardLevel-1].desc}</div>
-              <div className="level-adj">
-                <button className="adj-btn" onClick={() => setWizardLevel(l => Math.max(1, l-1))}>−</button>
-                <div className="adj-num">{wizardLevel}</div>
-                <button className="adj-btn" onClick={() => setWizardLevel(l => Math.min(10, l+1))}>+</button>
-              </div>
-              <button className="btn btn-green" onClick={() => {
-                setLevel(wizardLevel);
-                setStars(0);
-                setMessages([]);
-                setView('talk');
-              }}>
-                Start at Level {wizardLevel}! 🚀
-              </button>
-              <br/><br/>
-              <button className="btn btn-sm" style={{background:'rgba(255,255,255,.1)',color:'#ccc'}} onClick={() => setWizardChoice(null)}>← Back</button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (view === 'talk') {
-    const pct = Math.min((stars / levelData.stars) * 100, 100);
-    return (
-      <div style={{position:'relative',width:'100%',height:'100%',background:'#87CEEB'}}>
-        <canvas ref={canvasRef} style={{width:'100%',height:'100%',display:'block'}}/>
-        <div className="talk-overlay">
-          <div className="talk-top">
-            <div className="level-badge">{levelData.emoji} Level {level}: {levelData.name}</div>
-            <div className="stars-bar">
-              <div className="stars-label">⭐ Stars to fish game!</div>
-              <div className="stars-track"><div className="stars-fill" style={{width:`${pct}%`}}/></div>
-              <div className="star-count">{stars} / {levelData.stars} stars</div>
-            </div>
-            <div style={{display:'flex',gap:8}}>
-              <button className="icon-btn" title="Change Level" onClick={() => { setWizardChoice(null); setView('wizard'); }}>⚙️</button>
-              <button className="icon-btn" title="Parent Area" onClick={() => { setDashUnlocked(false); setView('dashboard'); }}>📊</button>
-            </div>
-          </div>
-
-          <div style={{flex:1}}/>
-
-          {starBursts.map(b => (
-            <div key={b.id} className="star-burst" style={{bottom:'100px',left:'50%',transform:'translateX(-50%)'}}>
-              {'⭐'.repeat(b.count)}
-            </div>
-          ))}
-
-          <div className="talk-bottom">
-            {typingMode ? (
-              <div className="input-row">
-                <input
-                  className="text-input"
-                  value={textInput}
-                  onChange={e => setTextInput(e.target.value)}
-                  placeholder="Type what you want to say..."
-                  onKeyDown={e => { if(e.key==='Enter' && textInput.trim()) { sendMessage(textInput); setTextInput(''); }}}
-                />
-                <button className="send-btn" onClick={() => { if(textInput.trim()) { sendMessage(textInput); setTextInput(''); }}}>➤</button>
-                <button className="icon-btn" onClick={() => setTypingMode(false)} title="Use microphone">🎤</button>
-              </div>
-            ) : (
-              <div className="input-row">
-                <button
-                  className={`mic-btn ${listening ? 'mic-active' : 'mic-idle'}`}
-                  onMouseDown={startMic}
-                  onMouseUp={stopMic}
-                  onTouchStart={startMic}
-                  onTouchEnd={stopMic}
-                  title={listening ? 'Listening...' : 'Hold to speak'}
-                >
-                  {listening ? '🔴' : '🎤'}
-                </button>
-                <div style={{flex:1,textAlign:'center'}}>
-                  <div style={{color:'rgba(255,255,255,.7)',fontSize:'.9rem'}}>
-                    {listening ? '🎙️ Listening... speak now!' : 'Hold the mic button and speak to Oral!'}
+      <div className="scroll-pad">
+        <h1 className="glow-title" style={{fontSize:30,textAlign:'center'}}>Your Ocean Family: {st.aquarium.length} Friends! 🌊</h1>
+        {byZone.map((z,zi) => {
+          const creatures = st.aquarium.filter((_,i)=> i % byZone.length === zi);
+          return (
+            <div key={z.id}>
+              <div className="zone-banner">{z.emoji} {z.name}{z.id==='kelp_forest'?' — always open':''}</div>
+              <div className="stat-grid">
+                {creatures.map((c,i) => (
+                  <div key={i} className="aq-card">
+                    <div className="ae">{c.emoji}</div>
+                    <div className="an">{c.name}</div>
+                    {c.desc && <div className="ad">{c.desc}</div>}
+                    <div className="ad">Joined {c.date}</div>
                   </div>
-                  <button className="type-toggle" onClick={() => setTypingMode(true)}>✍️ Type instead</button>
-                </div>
+                ))}
+                {!creatures.length && <div className="muted" style={{padding:12}}>Keep playing to bring friends to this zone!</div>}
               </div>
-            )}
-          </div>
-        </div>
-
-        {showCelebration && (
-          <div className="celebration">
-            <Confetti/>
-            <div className="celebration-emoji">🎉</div>
-            <div className="celebration-title">{celebrationMsg}</div>
-            <div style={{fontSize:'1rem',color:'#a0a0c0'}}>Get ready for your next adventure...</div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (view === 'fishgame') {
-    const fishTotal = levelData.fish;
-    const pct = Math.min((fishMoved / fishTotal) * 100, 100);
-    return (
-      <div style={{position:'relative',width:'100%',height:'100%',background:'#010820'}}>
-        <canvas ref={canvasRef} style={{width:'100%',height:'100%',display:'block'}}/>
-        <div className="fish-overlay">
-          <div className="fish-top">
-            <div style={{color:'#4488FF',fontWeight:700,fontSize:'1rem'}}>🐠 Fish Move Game!</div>
-            <div className="fish-progress-wrap">
-              <div className="fish-progress-label">{fishMoved}/{fishTotal} fish moved! 🐟</div>
-              <div className="fish-track"><div className="fish-fill" style={{width:`${pct}%`}}/></div>
             </div>
-            <div style={{fontSize:'.8rem',color:'#607090'}}>Level {level}</div>
-          </div>
-        </div>
-        <div className="fish-hint">👆 Tap a fish in the left tank to move it!</div>
-
-        {showCelebration && (
-          <div className="celebration">
-            <Confetti/>
-            <div className="celebration-emoji">🏆</div>
-            <div className="celebration-title">{celebrationMsg}</div>
-          </div>
-        )}
+          );
+        })}
+        {locked.map(z => <div key={z.id} className="zone-banner locked">🔒 {z.emoji} {z.name} — unlocks at Stage {z.stage}</div>)}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (view === 'dashboard') {
-    if (!dashUnlocked) {
+/* ============================ PIN GATE ============================ */
+function PinGate({ onPass, onCancel }) {
+  const [pin, setPin] = useState("");
+  const [err, setErr] = useState(false);
+  const press = (dgt) => {
+    playTap();
+    if (pin.length>=4) return;
+    const np = pin+dgt;
+    setPin(np);
+    if (np.length===4) {
+      if (np==="1234") setTimeout(()=>onPass('main'),150);
+      else if (np==="5678") setTimeout(()=>onPass('alt'),150);
+      else { setErr(true); setTimeout(()=>{setPin("");setErr(false);},700); }
+    }
+  };
+  return (
+    <div className="center" style={{minHeight:'100vh',padding:24,gap:24}}>
+      <h2 className="sect">Parent / Therapist</h2>
+      <div className="muted">Parent PIN: 1234 • Therapist PIN: 5678</div>
+      <div className="row" style={{justifyContent:'center'}}>{[0,1,2,3].map(i=><div key={i} className={"pin-dot"+(pin.length>i?' f':'')} style={err?{borderColor:'var(--coral)'}:{}} />)}</div>
+      <div className="keypad">
+        {[1,2,3,4,5,6,7,8,9].map(n=><button key={n} className="key" onClick={()=>press(String(n))}>{n}</button>)}
+        <button className="key" onClick={()=>{playTap();onCancel();}}>✕</button>
+        <button className="key" onClick={()=>press("0")}>0</button>
+        <button className="key" onClick={()=>{playTap();setPin(p=>p.slice(0,-1));}}>⌫</button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================ BAR CHART ============================ */
+function BarChart({ data, labels, height=80, color='#00b4b4' }) {
+  const ref = useRef(null);
+  useEffect(()=>{
+    const c = ref.current; if(!c) return; const ctx=c.getContext('2d');
+    const W=c.width=c.clientWidth, H=c.height=height;
+    ctx.clearRect(0,0,W,H);
+    const max = Math.max(1,...data); const bw = W/data.length;
+    data.forEach((v,i)=>{ const h=(v/max)*(H-16); const x=i*bw+bw*0.15, y=H-h-2, w=bw*0.7; ctx.fillStyle=color; if(ctx.roundRect){ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.fill();}else{ctx.fillRect(x,y,w,h);} });
+  },[JSON.stringify(data),height,color]);
+  return (
+    <div>
+      <canvas ref={ref} style={{width:'100%',height,display:'block'}} />
+      {labels && <div className="row muted" style={{justifyContent:'space-between',fontSize:10,marginTop:2}}>{labels.map((l,i)=><span key={i} style={{flex:1,textAlign:'center'}}>{l}</span>)}</div>}
+    </div>
+  );
+}
+
+/* ============================ PARENT DASHBOARD ============================ */
+function ParentDashboard({ st, update, onExit, onTherapist }) {
+  const [tab, setTab] = useState('overview');
+  const tabs = [['overview','Overview'],['progress','Progress'],['settings','Settings'],['coaching','Coaching'],['vocab','Vocabulary']];
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 18px'}} onClick={onExit}>← Exit</button>
+        <div className="badge">Parent Dashboard</div>
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 14px',fontSize:14}} onClick={onTherapist}>Therapist 🩺</button>
+      </div>
+      <div className="scroll-pad">
+        <div className="tabbar">{tabs.map(([k,l])=><button key={k} className={"tab"+(tab===k?' active':'')} onClick={()=>setTab(k)}>{l}</button>)}</div>
+        {tab==='overview' && <ParentOverview st={st} />}
+        {tab==='progress' && <ParentProgress st={st} />}
+        {tab==='settings' && <ParentSettings st={st} update={update} />}
+        {tab==='coaching' && <ParentCoaching st={st} update={update} />}
+        {tab==='vocab' && <ParentVocab st={st} update={update} />}
+      </div>
+    </div>
+  );
+}
+
+function ParentOverview({ st }) {
+  const todaySess = (st.sessionHistory||[]).filter(s=>s.date===today());
+  const attempts = todaySess.reduce((a,s)=>a+(s.attempts||0),0) || st.stageProgress.attempts;
+  const turns = (st.sessionHistory||[]).slice(-1)[0]?.attempts || st.stageProgress.attempts;
+  const dur = todaySess.reduce((a,s)=>a+(s.duration||0),0);
+  const rewards = todaySess.reduce((a,s)=>a+(s.rewards||0),0);
+  const days = Array.from({length:7},(_,i)=>{ const dt=new Date(); dt.setDate(dt.getDate()-(6-i)); return dt.toISOString().slice(0,10); });
+  const sevenDay = days.map(dd => (st.sessionHistory||[]).filter(s=>s.date===dd).reduce((a,s)=>a+(s.attempts||0),0));
+  const dayLabels = days.map(dd=>['Su','Mo','Tu','We','Th','Fr','Sa'][new Date(dd).getDay()]);
+  const sp = st.stageProgress;
+  const need = Math.max(0, 5 - (sp.attempts||0));
+  const lastSess = (st.sessionHistory||[]).slice(-1)[0];
+  return (<>
+    <div className="zone-banner">{st.childName}, age {st.childAge} • {BAND_NAMES[st.ageBand]}</div>
+    <div className="card" style={{marginBottom:14}}>
+      <div style={{fontWeight:800,fontSize:18}}>Stage {st.stage}: {STAGES[st.stage-1].name}</div>
+      <div className="muted">{STAGES[st.stage-1].desc}</div>
+    </div>
+    <h3 className="sub">Today's session</h3>
+    <div className="stat-grid">
+      <div className="stat"><div className="v">{attempts}</div><div className="k">Words Attempted</div></div>
+      <div className="stat"><div className="v">{st.wordsMastered.length}</div><div className="k">Words Mastered</div></div>
+      <div className="stat"><div className="v">{turns}</div><div className="k">Conversation Turns</div></div>
+      <div className="stat"><div className="v">{dur}m</div><div className="k">Session Duration</div></div>
+      <div className="stat"><div className="v">{rewards}</div><div className="k">Rewards Earned</div></div>
+    </div>
+    <h3 className="sub">Last 7 days — words attempted</h3>
+    <div className="card"><BarChart data={sevenDay} labels={dayLabels} /></div>
+    <h3 className="sub">Last session</h3>
+    <div className="card">{lastSess ? `${lastSess.date}: ${st.childName} ${lastSess.summary} (${lastSess.duration} min, stage ${lastSess.stage})` : "No sessions completed yet. Start an adventure!"}</div>
+    <h3 className="sub">Next milestone</h3>
+    <div className="card">{st.stage<6 ? `${need} more successful attempts (plus 2+ sessions & 2+ activities) to reach Stage ${st.stage+1}: ${STAGES[st.stage].name}` : "Top stage reached! Keep practicing conversations & stories."}</div>
+  </>);
+}
+
+function ParentProgress({ st }) {
+  const mastered = st.wordsMastered||[];
+  const attempting = st.wordsAttempted||[];
+  const allWords = [...mastered.map(m=>m.word), ...attempting.map(a=>a.word)];
+  const mlu = allWords.length ? (allWords.reduce((a,w)=>a+String(w).split(/\s+/).length,0)/allWords.length).toFixed(2) : "0.00";
+  const modalities = {speech:0,touch:0,gesture:0};
+  attempting.forEach(a=>{ const m=a.modality||'speech'; modalities[m]=(modalities[m]||0)+(a.count||1); });
+  const months = Array.from({length:6},(_,i)=>{ const dt=new Date(); dt.setMonth(dt.getMonth()-(5-i)); return dt.toISOString().slice(0,7); });
+  const monthData = months.map(m => (st.sessionHistory||[]).filter(s=>s.date.startsWith(m)).reduce((a,s)=>a+(s.attempts||0),0));
+  const monthLabels = months.map(m=>['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m.slice(5,7)-1]);
+  return (<>
+    <h3 className="sub">Words Mastered ({mastered.length})</h3>
+    <div className="card">{mastered.length? mastered.map((m,i)=><div key={i}>✅ {m.word} <span className="muted">— {m.date}</span></div>) : <span className="muted">None yet — every attempt counts!</span>}</div>
+    <h3 className="sub">Words in Progress</h3>
+    <div className="card">{attempting.length? attempting.map((a,i)=><div key={i}>🔄 {a.word} <span className="muted">({a.successes}/{a.count} successful)</span></div>) : <span className="muted">None in progress</span>}</div>
+    <h3 className="sub">Mean Length of Utterance (MLU)</h3>
+    <div className="card"><span style={{fontSize:30,fontWeight:900,color:'var(--gold)'}}>{mlu}</span> <span className="muted">words per utterance (target average)</span></div>
+    <h3 className="sub">Stage Progression</h3>
+    <div className="card"><div className="timeline">{STAGES.map(s=><div key={s.n} className="step"><div className={"dot"+(s.n<st.stage?' done':'')+(s.n===st.stage?' cur':'')}>{s.n}</div><div className="lbl">{s.name}</div></div>)}</div></div>
+    <h3 className="sub">Communication Modality</h3>
+    <div className="stat-grid">
+      <div className="stat"><div className="v">{modalities.speech}</div><div className="k">Speech</div></div>
+      <div className="stat"><div className="v">{modalities.touch}</div><div className="k">Touch / PECS</div></div>
+      <div className="stat"><div className="v">{modalities.gesture}</div><div className="k">Gesture</div></div>
+    </div>
+    <h3 className="sub">Monthly Attempts</h3>
+    <div className="card"><BarChart data={monthData} labels={monthLabels} color="#ffd700" /></div>
+    <h3 className="sub">Milestone Timeline</h3>
+    <div className="card">{(st.milestones||[]).length ? st.milestones.map((m,i)=><div key={i}>🏅 {m.label} <span className="muted">— {m.date}</span></div>) : <span className="muted">Milestones will appear here as {st.childName} grows!</span>}</div>
+  </>);
+}
+
+function ParentSettings({ st, update }) {
+  const [resetText, setResetText] = useState("");
+  const exportJson = useMemo(()=>JSON.stringify(st,null,2),[st]);
+  const Toggle = ({k,l}) => <div className="toggle-row"><span>{l}</span><div className={"toggle"+(st[k]?' on':'')} onClick={()=>{playTap();update({[k]:!st[k]});}}><div className="knob" /></div></div>;
+  return (<>
+    <h3 className="sub">Child</h3>
+    <label className="fld"><span>Name</span><input className="input" value={st.childName} onChange={e=>update({childName:e.target.value})} /></label>
+    <label className="fld"><span>Age: {st.childAge} ({BAND_NAMES[ageBandFor(st.childAge)]})</span><input type="range" min="3" max="10" value={st.childAge} style={{width:'100%'}} onChange={e=>update({childAge:+e.target.value, ageBand:ageBandFor(+e.target.value)})} /></label>
+    <label className="fld"><span>Communication Level</span><select className="input" value={st.communicationLevel} onChange={e=>update({communicationLevel:+e.target.value})}>{[1,2,3,4,5].map(n=><option key={n} value={n}>Level {n}</option>)}</select></label>
+    <h3 className="sub">Companion</h3>
+    <label className="fld"><span>Companion name</span><input className="input" value={st.companionName} onChange={e=>update({companionName:e.target.value})} /></label>
+    <div className="choice-grid" style={{gridTemplateColumns:'repeat(3,1fr)',marginBottom:14}}>{COMPANION_LIST.map(c=><button key={c.id} className={"emoji-card"+(st.companionType===c.id?' sel':'')} onClick={()=>update({companionType:c.id})}><span className="e">{c.emoji}</span><span className="l">{c.label}</span></button>)}</div>
+    <label className="fld"><span>Session time limit</span><select className="input" value={st.sessionTimeLimit} onChange={e=>update({sessionTimeLimit:+e.target.value})}>{[15,20,30,45].map(m=><option key={m} value={m}>{m} minutes</option>)}</select></label>
+    <h3 className="sub">Sensory & Modes</h3>
+    <div className="card">
+      <Toggle k="pecsMode" l="PECS mode (tap picture cards)" />
+      <Toggle k="sensoryMode" l="Reduced animation / sensory mode" />
+      <Toggle k="quietMode" l="Quiet mode (lower volume)" />
+      <Toggle k="noSuddenSounds" l="No sudden sounds" />
+      <Toggle k="highContrast" l="High contrast mode" />
+    </div>
+    <h3 className="sub">Export Data</h3>
+    <textarea className="input" readOnly value={exportJson} onClick={e=>e.target.select()} />
+    <h3 className="sub">Reset Progress</h3>
+    <div className="card">
+      <div className="muted">Type RESET to erase all data and start over.</div>
+      <input className="input" style={{marginTop:8}} value={resetText} onChange={e=>setResetText(e.target.value)} placeholder="Type RESET" />
+      <button className="btn coral" style={{marginTop:10,width:'100%'}} disabled={resetText!=='RESET'} onClick={()=>{ localStorage.removeItem(KEY); location.reload(); }}>Reset Everything</button>
+    </div>
+  </>);
+}
+
+function ParentCoaching({ st, update }) {
+  const name = st.childName;
+  const week = Math.floor(Date.now()/(7*864e5));
+  const rotated = COACH_TIPS.map((_,i)=>COACH_TIPS[(i+week)%COACH_TIPS.length]);
+  return (<>
+    <div className="zone-banner">Tips for Communication Level {st.communicationLevel} • rotates weekly</div>
+    {rotated.map((t,i)=>(
+      <div className="tip-card" key={i} onClick={()=>{ if(!st.coachingTipsRead.includes(t.t)) update({coachingTipsRead:[...st.coachingTipsRead,t.t]}); }}>
+        <div className="tt">{t.e} {t.t} {st.coachingTipsRead.includes(t.t)?'✓':''}</div>
+        <div className="tb">{t.b.replace(/\[NAME\]/g,name)}</div>
+      </div>
+    ))}
+  </>);
+}
+
+function ParentVocab({ st, update }) {
+  const [word, setWord] = useState("");
+  const add = () => { const w=word.trim().toLowerCase(); if(!w) return; if(!st.customVocabulary.includes(w)) update({customVocabulary:[...st.customVocabulary,w]}); setWord(""); playTap(); };
+  const remove = (w) => update({customVocabulary:st.customVocabulary.filter(x=>x!==w)});
+  const suggested = useMemo(()=>(WORD_BANKS[st.stage]||WORD_BANKS[1]).map(b=>b.word),[st.stage]);
+  const masteredSet = new Set((st.wordsMastered||[]).map(m=>m.word));
+  return (<>
+    <h3 className="sub">Add Custom Target Word</h3>
+    <div className="row"><input className="input" style={{flex:1}} value={word} onChange={e=>setWord(e.target.value)} placeholder="e.g. bubble" onKeyDown={e=>e.key==='Enter'&&add()} /><button className="btn" onClick={add}>Add</button></div>
+    <h3 className="sub">Parent-Added Words ({st.customVocabulary.length})</h3>
+    <div className="card">{st.customVocabulary.length? st.customVocabulary.map(w=><div key={w} className="row" style={{justifyContent:'space-between',padding:'4px 0'}}><span>⭐ {w} {masteredSet.has(w)?'✅ mastered':''}</span><button className="btn ghost" style={{minHeight:36,padding:'4px 12px',fontSize:13}} onClick={()=>remove(w)}>Remove</button></div>) : <span className="muted">No custom words yet</span>}</div>
+    <h3 className="sub">System-Suggested (Stage {st.stage})</h3>
+    <div className="card">{suggested.map(w=><div key={w}>💡 {w} {masteredSet.has(w)?'✅':((st.wordsAttempted||[]).find(a=>a.word===w)?'🔄':'')}</div>)}</div>
+  </>);
+}
+
+/* ============================ THERAPIST DASHBOARD ============================ */
+function TherapistDashboard({ st, update, onExit }) {
+  const [tab, setTab] = useState('overview');
+  const tabs = [['overview','Overview'],['goals','Goals'],['reports','Reports'],['activities','Activities'],['settings','Settings']];
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 18px'}} onClick={onExit}>← Parent</button>
+        <div className="badge">🩺 Therapist Dashboard</div>
+        <div style={{width:80}} />
+      </div>
+      <div className="scroll-pad">
+        <div className="tabbar">{tabs.map(([k,l])=><button key={k} className={"tab"+(tab===k?' active':'')} onClick={()=>setTab(k)}>{l}</button>)}</div>
+        {tab==='overview' && <TherapistOverview st={st} />}
+        {tab==='goals' && <TherapistGoals st={st} update={update} />}
+        {tab==='reports' && <TherapistReports st={st} />}
+        {tab==='activities' && <TherapistActivities st={st} update={update} />}
+        {tab==='settings' && <TherapistSettings st={st} update={update} />}
+      </div>
+    </div>
+  );
+}
+
+function TherapistOverview({ st }) {
+  const days30 = Array.from({length:30},(_,i)=>{ const dt=new Date(); dt.setDate(dt.getDate()-(29-i)); return dt.toISOString().slice(0,10); });
+  const freq = days30.map(dd => (st.sessionHistory||[]).filter(s=>s.date===dd).length);
+  const daysSince = st.lastSessionDate ? Math.floor((Date.now()-new Date(st.lastSessionDate))/864e5) : 999;
+  const allWords = [...(st.wordsMastered||[]).map(m=>m.word), ...(st.wordsAttempted||[]).map(a=>a.word)];
+  const mlu = allWords.length ? (allWords.reduce((a,w)=>a+String(w).split(/\s+/).length,0)/allWords.length).toFixed(2) : "0.00";
+  const totalAtt = (st.wordsAttempted||[]).reduce((a,w)=>a+(w.count||0),0)+(st.wordsMastered||[]).length;
+  const spontRate = totalAtt? Math.round(((st.wordsMastered||[]).length/totalAtt)*100) : 0;
+  return (<>
+    <div className="zone-banner">{st.childName}, age {st.childAge} • {BAND_NAMES[st.ageBand]}</div>
+    {daysSince>=7 && <div className="mic-error">⚠️ No sessions in {daysSince===999?'a while':daysSince+' days'}. Consider re-engagement strategies.</div>}
+    <div className="card" style={{margin:'12px 0'}}>
+      <div style={{fontWeight:800}}>Stage {st.stage}: {STAGES[st.stage-1].name}</div>
+      <div className="muted">Communication Level {st.communicationLevel}</div>
+    </div>
+    <div className="stat-grid">
+      <div className="stat"><div className="v">{mlu}</div><div className="k">MLU Trend</div></div>
+      <div className="stat"><div className="v">{st.stage}/6</div><div className="k">Stage</div></div>
+      <div className="stat"><div className="v">{spontRate}%</div><div className="k">Mastery Rate</div></div>
+      <div className="stat"><div className="v">{st.totalSessions||0}</div><div className="k">Total Sessions</div></div>
+    </div>
+    <h3 className="sub">Session Frequency (30 days)</h3>
+    <div className="card"><BarChart data={freq} color="#00b4b4" /></div>
+  </>);
+}
+
+function TherapistGoals({ st, update }) {
+  const [d, setD] = useState({description:"",targetStage:st.stage,targetWords:"",deadline:""});
+  const [showReport,setShowReport]=useState(false);
+  const goals = st.therapistGoals||[];
+  const masteredSet = new Set((st.wordsMastered||[]).map(m=>m.word));
+  const addGoal = () => { if(!d.description.trim()) return; const g={id:Date.now(),description:d.description,targetStage:+d.targetStage,targetWords:d.targetWords.split(',').map(s=>s.trim()).filter(Boolean),deadline:d.deadline,notes:"",achieved:false}; update({therapistGoals:[...goals,g]}); setD({description:"",targetStage:st.stage,targetWords:"",deadline:""}); playTap(); };
+  const upd = (id,patch) => update({therapistGoals:goals.map(g=>g.id===id?{...g,...patch}:g)});
+  const del = (id) => update({therapistGoals:goals.filter(g=>g.id!==id)});
+  const report = useMemo(()=> "INDIVIDUAL LEARNING PLAN\n========================\nChild: "+st.childName+" (age "+st.childAge+")\nCurrent Stage: "+st.stage+" ("+STAGES[st.stage-1].name+")\nTherapist: "+(st.therapistName||"—")+"\nReview date: "+(st.goalReviewDate||"—")+"\n\nGOALS:\n"+(goals.length?goals.map((g,i)=>{ const got=g.targetWords.filter(w=>masteredSet.has(w)).length; return (i+1)+". "+g.description+"\n   Target stage: "+g.targetStage+" | Deadline: "+(g.deadline||"—")+"\n   Target words: "+(g.targetWords.join(", ")||"—")+"\n   Progress: "+got+"/"+(g.targetWords.length||0)+" mastered\n   Status: "+(g.achieved?"ACHIEVED":"Active")+"\n   Notes: "+(g.notes||"—"); }).join("\n\n"):"(none)"), [JSON.stringify(goals),st.childName,st.therapistName,st.goalReviewDate]);
+  return (<>
+    <h3 className="sub">Add Goal (ILP)</h3>
+    <div className="card">
+      <label className="fld"><span>Description</span><input className="input" value={d.description} onChange={e=>setD({...d,description:e.target.value})} placeholder="e.g. Produce 10 two-word phrases" /></label>
+      <label className="fld"><span>Target Stage</span><select className="input" value={d.targetStage} onChange={e=>setD({...d,targetStage:e.target.value})}>{STAGES.map(s=><option key={s.n} value={s.n}>Stage {s.n}: {s.name}</option>)}</select></label>
+      <label className="fld"><span>Target Words (comma separated)</span><input className="input" value={d.targetWords} onChange={e=>setD({...d,targetWords:e.target.value})} placeholder="fish, blue fish, more" /></label>
+      <label className="fld"><span>Deadline</span><input className="input" type="date" value={d.deadline} onChange={e=>setD({...d,deadline:e.target.value})} /></label>
+      <button className="btn" style={{width:'100%'}} onClick={addGoal}>Add Goal</button>
+    </div>
+    <h3 className="sub">Current Term Goals ({goals.length})</h3>
+    {goals.map(g=>{ const got=g.targetWords.filter(w=>masteredSet.has(w)).length; const pct=g.targetWords.length?Math.round(got/g.targetWords.length*100):(g.achieved?100:0); return (
+      <div className="card" key={g.id} style={{marginBottom:12}}>
+        <div style={{fontWeight:800}}>{g.description}</div>
+        <div className="muted">Target Stage {g.targetStage} • Deadline {g.deadline||'—'}</div>
+        <div className="progress-bar" style={{margin:'8px 0'}}><div style={{width:pct+'%'}} /></div>
+        <div className="muted">{got}/{g.targetWords.length} target words mastered ({pct}%)</div>
+        <textarea className="input" style={{marginTop:8,minHeight:60}} placeholder="Notes…" value={g.notes} onChange={e=>upd(g.id,{notes:e.target.value})} />
+        <div className="row" style={{marginTop:8}}>
+          <button className={"btn "+(g.achieved?'success':'ghost')} style={{minHeight:44}} onClick={()=>upd(g.id,{achieved:!g.achieved})}>{g.achieved?'✓ Achieved':'Mark Achieved'}</button>
+          <div className="spacer" /><button className="btn coral" style={{minHeight:44}} onClick={()=>del(g.id)}>Delete</button>
+        </div>
+      </div>
+    );})}
+    {!goals.length && <div className="card muted">No goals yet. Add one above.</div>}
+    <button className="btn gold" style={{width:'100%',marginTop:8}} onClick={()=>setShowReport(s=>!s)}>{showReport?'Hide Report':'Generate Report'}</button>
+    {showReport && <textarea className="input" style={{marginTop:10,minHeight:240}} readOnly value={report} onClick={e=>e.target.select()} />}
+  </>);
+}
+
+function TherapistReports({ st }) {
+  const [from,setFrom]=useState(""); const [to,setTo]=useState("");
+  const sessions = (st.sessionHistory||[]).filter(s=> (!from||s.date>=from) && (!to||s.date<=to));
+  const text = useMemo(()=> "SESSION REPORT — "+st.childName+"\n"+"=".repeat(34)+"\n"+(sessions.length?sessions.map(s=>`${s.date} | ${s.duration}min | attempts:${s.attempts} successes:${s.successes} stage:${s.stage} rewards:${s.rewards}`).join("\n"):"(no sessions in range)"),[JSON.stringify(sessions),st.childName]);
+  return (<>
+    <h3 className="sub">Filter by Date</h3>
+    <div className="row"><input className="input" type="date" value={from} onChange={e=>setFrom(e.target.value)} /><input className="input" type="date" value={to} onChange={e=>setTo(e.target.value)} /></div>
+    <h3 className="sub">Sessions ({sessions.length})</h3>
+    <div className="card" style={{overflowX:'auto'}}>
+      <table className="rep">
+        <thead><tr><th align="left">Date</th><th>Dur</th><th>Att</th><th>Succ</th><th>Stage</th><th>Rwd</th></tr></thead>
+        <tbody>{sessions.map((s,i)=><tr key={i}><td>{s.date}</td><td align="center">{s.duration}m</td><td align="center">{s.attempts}</td><td align="center">{s.successes}</td><td align="center">{s.stage}</td><td align="center">{s.rewards}</td></tr>)}</tbody>
+      </table>
+      {!sessions.length && <div className="muted" style={{padding:8}}>No sessions in this range.</div>}
+    </div>
+    <h3 className="sub">Speech Attempt Breakdown</h3>
+    <div className="card">{(st.wordsAttempted||[]).length||(st.wordsMastered||[]).length ? (<>{(st.wordsMastered||[]).map((m,i)=><div key={'m'+i}>✅ {m.word} (mastered)</div>)}{(st.wordsAttempted||[]).map((a,i)=><div key={'a'+i}>🔄 {a.word} — {a.successes}/{a.count} ({a.modality})</div>)}</>) : <span className="muted">No attempt data yet.</span>}</div>
+    <h3 className="sub">Export Summary</h3>
+    <textarea className="input" style={{minHeight:200}} readOnly value={text} onClick={e=>e.target.select()} />
+  </>);
+}
+
+function TherapistActivities({ st, update }) {
+  const [vocabName,setVocabName]=useState(""); const [vocabWords,setVocabWords]=useState("");
+  const [scTitle,setScTitle]=useState(""); const [scLines,setScLines]=useState(["","","",""]);
+  const acts = st.customActivities||[];
+  const addVocab = () => { if(!vocabName.trim())return; update({customActivities:[...acts,{id:Date.now(),type:'vocab',name:vocabName,words:vocabWords.split(',').map(s=>s.trim()).filter(Boolean),assigned:false}]}); setVocabName("");setVocabWords("");playTap(); };
+  const addScenario = () => { if(!scTitle.trim())return; update({customActivities:[...acts,{id:Date.now(),type:'scenario',title:scTitle,lines:scLines.map(l=>l||"...")}]}); setScTitle("");setScLines(["","","",""]);playTap(); };
+  const assign = (id) => { const set=acts.find(a=>a.id===id); update({customActivities:acts.map(a=>a.type==='vocab'?{...a,assigned:a.id===id}:a), customVocabulary:[...new Set([...(st.customVocabulary||[]),...set.words])]}); };
+  const del = (id) => update({customActivities:acts.filter(a=>a.id!==id)});
+  return (<>
+    <h3 className="sub">Custom Vocabulary Set</h3>
+    <div className="card">
+      <label className="fld"><span>Set name</span><input className="input" value={vocabName} onChange={e=>setVocabName(e.target.value)} placeholder="e.g. Mealtime words" /></label>
+      <label className="fld"><span>Words (comma separated)</span><input className="input" value={vocabWords} onChange={e=>setVocabWords(e.target.value)} placeholder="spoon, cup, more, all done" /></label>
+      <button className="btn" style={{width:'100%'}} onClick={addVocab}>Save Set</button>
+    </div>
+    {acts.filter(a=>a.type==='vocab').map(a=><div className="card" key={a.id} style={{marginBottom:10}}><div style={{fontWeight:800}}>{a.name} {a.assigned?'✅ assigned':''}</div><div className="muted">{a.words.join(', ')}</div><div className="row" style={{marginTop:8}}><button className="btn ghost" style={{minHeight:42}} onClick={()=>assign(a.id)}>Assign to {st.childName}</button><div className="spacer"/><button className="btn coral" style={{minHeight:42}} onClick={()=>del(a.id)}>Delete</button></div></div>)}
+    <h3 className="sub">Custom Scenario Script</h3>
+    <div className="card">
+      <label className="fld"><span>Title</span><input className="input" value={scTitle} onChange={e=>setScTitle(e.target.value)} placeholder="e.g. Going to the dentist" /></label>
+      {scLines.map((l,i)=><label className="fld" key={i}><span>Line {i+1} (use [CHILD] for name)</span><input className="input" value={l} onChange={e=>{const n=[...scLines];n[i]=e.target.value;setScLines(n);}} /></label>)}
+      <button className="btn" style={{width:'100%'}} onClick={addScenario}>Save Scenario</button>
+    </div>
+    {acts.filter(a=>a.type==='scenario').map(a=><div className="card" key={a.id} style={{marginBottom:10}}><div style={{fontWeight:800}}>🎭 {a.title}</div>{a.lines.map((l,i)=><div className="muted" key={i}>{i+1}. {l}</div>)}<button className="btn coral" style={{minHeight:42,marginTop:8}} onClick={()=>del(a.id)}>Delete</button></div>)}
+    <div className="muted" style={{marginTop:8}}>Saved scenarios appear in the child's Social Scenario game.</div>
+  </>);
+}
+
+function TherapistSettings({ st, update }) {
+  return (<>
+    <label className="fld"><span>Therapist Name (for reports)</span><input className="input" value={st.therapistName} onChange={e=>update({therapistName:e.target.value})} placeholder="e.g. Dr. Rivera, SLP" /></label>
+    <label className="fld"><span>Goal Review Date</span><input className="input" type="date" value={st.goalReviewDate||""} onChange={e=>update({goalReviewDate:e.target.value})} /></label>
+    <label className="fld"><span>Clinical Notes</span><textarea className="input" style={{minHeight:180}} value={st.therapistNotes} onChange={e=>update({therapistNotes:e.target.value})} placeholder="Free-text clinical notes (saved locally)…" /></label>
+    <div className="muted">All therapist data is stored locally on this device only.</div>
+  </>);
+}
+
+/* ============================ ERROR BOUNDARY ============================ */
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(e) { return { err: e }; }
+  componentDidCatch(e, info) { console.error('Oral render error:', e, info); }
+  render() {
+    if (this.state.err) {
       return (
-        <div style={{position:'relative',width:'100%',height:'100%',background:'linear-gradient(135deg,#0f0c29,#1a0533)'}}>
-          <div className="pin-screen">
-            <div style={{fontSize:'2rem'}}>🔒</div>
-            <div className="pin-title">Parent / Carer Area</div>
-            <div style={{color:'#a0a0c0',fontSize:'.9rem'}}>Enter PIN to continue</div>
-            <input
-              className="pin-input"
-              type="password"
-              maxLength={4}
-              value={pinInput}
-              onChange={e => { setPinInput(e.target.value); setPinError(''); }}
-              placeholder="••••"
-              onKeyDown={e => {
-                if (e.key==='Enter') {
-                  if (pinInput === '1234') { setDashUnlocked(true); setPinInput(''); }
-                  else setPinError('Incorrect PIN. Default is 1234');
-                }
-              }}
-            />
-            {pinError && <div className="pin-error">{pinError}</div>}
-            <button className="btn btn-primary" onClick={() => {
-              if (pinInput === '1234') { setDashUnlocked(true); setPinInput(''); }
-              else setPinError('Incorrect PIN. Default is 1234');
-            }}>Enter</button>
-            <button className="btn btn-sm" style={{background:'rgba(255,255,255,.1)',color:'#ccc',marginTop:8}} onClick={() => setView('welcome')}>← Back</button>
-          </div>
+        <div style={{position:'fixed',inset:0,background:'#061428',color:'#ff6b6b',padding:32,fontFamily:'monospace',fontSize:14,overflow:'auto',zIndex:9999}}>
+          <div style={{fontSize:32,marginBottom:16}}>🌊 Oral — Something went wrong</div>
+          <div style={{color:'#7fd7e8',marginBottom:8}}>Error: {String(this.state.err.message||this.state.err)}</div>
+          <div style={{color:'#a0c0d0',marginBottom:24,fontSize:12}}>{String(this.state.err.stack||'').slice(0,600)}</div>
+          <button onClick={()=>{ localStorage.removeItem('oral_v2'); window.location.reload(); }}
+            style={{padding:'12px 24px',background:'#00b4b4',color:'#fff',border:'none',borderRadius:12,fontSize:16,cursor:'pointer',marginRight:12}}>
+            Reset &amp; Reload
+          </button>
+          <button onClick={()=>window.location.reload()}
+            style={{padding:'12px 24px',background:'#0a3d6b',color:'#fff',border:'none',borderRadius:12,fontSize:16,cursor:'pointer'}}>
+            Reload
+          </button>
         </div>
       );
     }
-
-    return (
-      <div className="dash-wrap">
-        <div className="dash-box">
-          <div className="dash-title">📊 Parent & Carer Dashboard</div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Current Progress</div>
-            <div className="stat-grid">
-              <div className="stat-card">
-                <div className="stat-val">{level}/10</div>
-                <div className="stat-label">Current Level</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-val">{totalStars}</div>
-                <div className="stat-label">Total Stars Earned</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-val">{sessionTurns}</div>
-                <div className="stat-label">Session Turns</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-val">{sessionWords}</div>
-                <div className="stat-label">Words This Session</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Level Progress</div>
-            {LEVELS.map((l, i) => (
-              <div className="level-row" key={l.num}>
-                <div className="level-row-name">{l.emoji} {l.name}</div>
-                <div className="level-row-track">
-                  <div className="level-row-fill" style={{width: i < level-1 ? '100%' : i === level-1 ? `${Math.min((stars/l.stars)*100,100)}%` : '0%'}}/>
-                </div>
-                <div className="level-row-status">
-                  {i < level-1 ? '✅' : i === level-1 ? `L${level}` : '🔒'}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Session Recommendations</div>
-            <div className="info-box">
-              ⏱️ <strong>Duration:</strong> 10–15 minutes per session<br/>
-              📅 <strong>Frequency:</strong> 3–5 sessions per week<br/>
-              🔇 <strong>Environment:</strong> Quiet room, minimal background noise<br/>
-              👀 <strong>Supervision:</strong> Sit with your child for best results<br/>
-              💻 <strong>Browser:</strong> Chrome or Edge for speech recognition
-            </div>
-          </div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Therapy Approach</div>
-            <div className="info-box">
-              Oral uses evidence-based speech therapy methods: <strong>Model-Expand</strong>, <strong>Positive Reinforcement</strong>, and <strong>Progressive Scaffolding</strong>. Every attempt is celebrated. Oral never corrects pronunciation or expresses disappointment.<br/><br/>
-              <strong>⚠️ Important:</strong> Oral supplements but does not replace a qualified Speech and Language Therapist (SLT).
-            </div>
-          </div>
-
-          <div className="dash-section">
-            <div className="dash-section-title">Safeguarding</div>
-            <div className="info-box">
-              If a child mentions being hurt or in danger, Oral responds: <em>"Please find a grown-up right now! They will help you!"</em> and redirects. No personal data is collected or stored server-side.
-            </div>
-          </div>
-
-          <div style={{display:'flex',gap:12,justifyContent:'center',marginTop:8,flexWrap:'wrap'}}>
-            <button className="btn btn-primary" onClick={() => { setDashUnlocked(false); setView('talk'); }}>▶ Back to Oral</button>
-            <button className="btn" style={{background:'rgba(255,255,255,.1)',color:'#ccc'}} onClick={() => { setWizardChoice(null); setDashUnlocked(false); setView('wizard'); }}>⚙️ Change Level</button>
-            <button className="btn" style={{background:'rgba(255,255,255,.1)',color:'#ccc'}} onClick={() => { setDashUnlocked(false); setView('welcome'); }}>🏠 Home</button>
-          </div>
-        </div>
-      </div>
-    );
+    return this.props.children;
   }
-
-  return null;
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<OralApp/>);
+/* ============================ MOUNT ============================ */
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <ErrorBoundary><App /></ErrorBoundary>
+);
 </script>
 </body>
 </html>
