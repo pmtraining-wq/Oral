@@ -210,14 +210,22 @@ table.rep td { padding: 4px; border-top: 1px solid rgba(127,215,232,.15); }
   </div>
 </div>
 <script>
-  // Show error if scripts fail to load after 10s
-  setTimeout(()=>{
-    const el = document.getElementById('load-err');
-    if(el && document.getElementById('root').children.length && !document.querySelector('[data-reactroot]')){
+  window.addEventListener('error', function(e) {
+    var el = document.getElementById('load-err');
+    if (el) { el.style.display='block'; el.textContent='JS Error: ' + (e.message||'unknown') + ' (line '+e.lineno+')'; }
+  });
+  window.addEventListener('unhandledrejection', function(e) {
+    var el = document.getElementById('load-err');
+    if (el) { el.style.display='block'; el.textContent='Error: ' + (e.reason||'unknown'); }
+  });
+  setTimeout(function(){
+    var el = document.getElementById('load-err');
+    var root = document.getElementById('root');
+    if (el && root && root.querySelector('canvas') === null) {
       el.style.display='block';
-      el.textContent='App failed to load. Check your internet connection and reload.';
+      el.textContent='App took too long to load. Check internet connection and reload.';
     }
-  }, 10000);
+  }, 12000);
 </script>
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
@@ -1557,8 +1565,37 @@ function TherapistSettings({ st, update }) {
   </>);
 }
 
+/* ============================ ERROR BOUNDARY ============================ */
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(e) { return { err: e }; }
+  componentDidCatch(e, info) { console.error('Oral render error:', e, info); }
+  render() {
+    if (this.state.err) {
+      return (
+        <div style={{position:'fixed',inset:0,background:'#061428',color:'#ff6b6b',padding:32,fontFamily:'monospace',fontSize:14,overflow:'auto',zIndex:9999}}>
+          <div style={{fontSize:32,marginBottom:16}}>🌊 Oral — Something went wrong</div>
+          <div style={{color:'#7fd7e8',marginBottom:8}}>Error: {String(this.state.err.message||this.state.err)}</div>
+          <div style={{color:'#a0c0d0',marginBottom:24,fontSize:12}}>{String(this.state.err.stack||'').slice(0,600)}</div>
+          <button onClick={()=>{ localStorage.removeItem('oral_v2'); window.location.reload(); }}
+            style={{padding:'12px 24px',background:'#00b4b4',color:'#fff',border:'none',borderRadius:12,fontSize:16,cursor:'pointer',marginRight:12}}>
+            Reset &amp; Reload
+          </button>
+          <button onClick={()=>window.location.reload()}
+            style={{padding:'12px 24px',background:'#0a3d6b',color:'#fff',border:'none',borderRadius:12,fontSize:16,cursor:'pointer'}}>
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 /* ============================ MOUNT ============================ */
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <ErrorBoundary><App /></ErrorBoundary>
+);
 </script>
 </body>
 </html>
