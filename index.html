@@ -3,968 +3,1544 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Oral 🌊</title>
+<title>🌊 Oral — Underwater Speech Companion</title>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-  :root {
-    --deep: #0a1628;
-    --ocean: #0d4f7c;
-    --teal: #00a8a8;
-    --light: #7fd7e8;
-    --gold: #ffd700;
-    --coral: #ff6b6b;
-    --cream: #fffdf5;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body, #root { height: 100%; width: 100%; overflow: hidden; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--deep);
-    color: var(--cream);
-    user-select: none;
-  }
-  #bgCanvas { position: fixed; inset: 0; z-index: 0; }
-  .app { position: relative; z-index: 1; height: 100%; width: 100%; overflow-y: auto; }
-  .center-col { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; padding: 24px; text-align: center; }
+:root {
+  --deep: #061428;
+  --ocean: #0a3d6b;
+  --mid: #0d5c9c;
+  --teal: #00b4b4;
+  --light: #7fd7e8;
+  --foam: #c8f0f8;
+  --gold: #ffd700;
+  --coral: #ff6b6b;
+  --cream: #fff8f0;
+  --success: #22c55e;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; height: 100%; width: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--deep);
+  color: var(--cream);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+#root, .app-root { height: 100vh; width: 100vw; position: relative; overflow: hidden; }
+#bgCanvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.layer { position: relative; z-index: 2; height: 100vh; width: 100vw; overflow-y: auto; }
 
-  button { font-family: inherit; cursor: pointer; border: none; }
-  .btn {
-    min-height: 56px; border-radius: 50px; padding: 16px 32px; font-size: 20px; font-weight: 800;
-    color: #fff; background: linear-gradient(135deg, var(--teal), var(--ocean));
-    box-shadow: 0 8px 20px rgba(0,168,168,.35); transition: transform .15s, box-shadow .15s; margin: 8px;
-  }
-  .btn:active { transform: scale(.95); }
-  .btn.gold { background: linear-gradient(135deg, var(--gold), #ffb300); color: #4a3000; box-shadow: 0 8px 20px rgba(255,215,0,.4); }
-  .btn.coral { background: linear-gradient(135deg, var(--coral), #e85555); }
-  .btn.ghost { background: rgba(255,255,255,.12); box-shadow: none; border: 2px solid rgba(255,255,255,.3); }
-  .btn.sm { min-height: 44px; padding: 10px 18px; font-size: 15px; border-radius: 30px; }
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+.btn {
+  min-height: 56px; border-radius: 28px; padding: 14px 28px;
+  font-size: 20px; font-weight: 700; color: var(--cream);
+  background: linear-gradient(135deg, var(--teal), var(--mid));
+  box-shadow: 0 6px 22px rgba(0,180,180,.35), inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn:active { transform: scale(.95); }
+.btn.gold { background: linear-gradient(135deg, var(--gold), #ff9d00); color: #3a2400; }
+.btn.coral { background: linear-gradient(135deg, var(--coral), #d83a3a); }
+.btn.ghost { background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 2px rgba(255,255,255,.25); }
+.btn.success { background: linear-gradient(135deg, var(--success), #15803d); }
+.btn:disabled { opacity: .5; }
 
-  .logo { font-size: 64px; font-weight: 900; text-shadow: 0 4px 24px rgba(0,168,168,.6); letter-spacing: 1px; }
-  .tagline { font-size: 18px; opacity: .9; margin: 12px 0 32px; max-width: 460px; line-height: 1.5; }
+.center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.glow-title {
+  font-size: clamp(48px, 12vw, 96px); font-weight: 900; margin: 0;
+  background: linear-gradient(180deg, var(--foam), var(--light), var(--teal));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 40px rgba(0,180,180,.6); letter-spacing: -2px;
+}
+.tagline { font-size: clamp(16px,4vw,22px); color: var(--light); text-align: center; max-width: 600px; margin: 18px 0 36px; line-height: 1.4; }
 
-  .card {
-    background: rgba(13,79,124,.55); backdrop-filter: blur(10px); border: 1px solid rgba(127,215,232,.25);
-    border-radius: 16px; padding: 20px; margin: 10px 0;
-  }
-  .panel {
-    background: rgba(10,22,40,.82); backdrop-filter: blur(14px); border: 1px solid rgba(127,215,232,.3);
-    border-radius: 24px; padding: 28px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,.4);
-  }
-  h2 { font-size: 26px; margin-bottom: 6px; }
-  .sub { opacity: .8; margin-bottom: 20px; font-size: 15px; }
-  label { display: block; font-weight: 700; margin: 16px 0 6px; font-size: 15px; }
-  input[type=text], input[type=number], select {
-    width: 100%; padding: 14px; border-radius: 12px; border: 2px solid rgba(127,215,232,.4);
-    background: rgba(255,255,255,.95); color: var(--deep); font-size: 18px; font-weight: 700; font-family: inherit;
-  }
-  input[type=range] { width: 100%; accent-color: var(--teal); height: 40px; }
-  .pill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .opt {
-    padding: 14px; border-radius: 14px; border: 2px solid rgba(127,215,232,.3); background: rgba(255,255,255,.06);
-    font-weight: 700; font-size: 15px; text-align: center; min-height: 56px; display: flex; align-items: center; justify-content: center; transition: all .15s;
-  }
-  .opt.active { background: var(--teal); border-color: var(--light); box-shadow: 0 6px 16px rgba(0,168,168,.4); }
-  .opt.big { font-size: 38px; flex-direction: column; gap: 4px; }
-  .opt.big span { font-size: 14px; }
+.card {
+  background: rgba(13,92,156,.30); backdrop-filter: blur(10px);
+  border: 1px solid rgba(127,215,232,.25); border-radius: 20px;
+  padding: 18px; box-shadow: 0 8px 28px rgba(0,0,0,.3);
+}
+.card.solid { background: rgba(10,40,75,.92); }
 
-  .steps { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.3); }
-  .dot.on { background: var(--gold); }
-  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .toggle { width: 56px; height: 32px; border-radius: 20px; background: rgba(255,255,255,.25); position: relative; transition: background .2s; flex: 0 0 auto; }
-  .toggle.on { background: var(--teal); }
-  .toggle .knob { width: 26px; height: 26px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: left .2s; }
-  .toggle.on .knob { left: 27px; }
+.input, .num-input {
+  width: 100%; font-size: 20px; padding: 14px 18px; border-radius: 16px;
+  border: 2px solid rgba(127,215,232,.4); background: rgba(6,20,40,.6);
+  color: var(--cream); outline: none; font-family: inherit;
+}
+.input:focus { border-color: var(--teal); }
+label.fld { display: block; margin-bottom: 22px; }
+label.fld > span { display: block; font-size: 16px; color: var(--light); margin-bottom: 8px; font-weight: 600; }
 
-  /* Child world */
-  .topbar { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; padding: 16px; z-index: 5; }
-  .badge { background: rgba(10,22,40,.7); backdrop-filter: blur(8px); border-radius: 30px; padding: 10px 18px; font-weight: 800; font-size: 17px; border: 1px solid rgba(127,215,232,.3); }
-  .companion { font-size: 120px; line-height: 1; filter: drop-shadow(0 10px 20px rgba(0,0,0,.4)); animation: bob 3s ease-in-out infinite; }
-  @keyframes bob { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-18px) } }
-  .companion.happy { animation: happy .5s ease-in-out infinite; }
-  @keyframes happy { 0%,100%{ transform: translateY(0) rotate(-6deg) } 50%{ transform: translateY(-30px) rotate(6deg) } }
-  .speech {
-    background: var(--cream); color: var(--deep); border-radius: 24px; padding: 18px 24px; max-width: 420px;
-    font-size: 22px; font-weight: 800; line-height: 1.35; position: relative; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin-bottom: 14px;
-  }
-  .speech::after { content: ""; position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); border: 14px solid transparent; border-top-color: var(--cream); border-bottom: none; }
-  .listening { animation: pulse 1s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{ box-shadow: 0 12px 30px rgba(0,168,168,.3) } 50%{ box-shadow: 0 12px 40px rgba(0,168,168,.8) } }
+.choice-grid { display: grid; gap: 12px; }
+.choice {
+  background: rgba(13,92,156,.35); border: 2px solid transparent; border-radius: 18px;
+  padding: 16px; font-size: 18px; color: var(--cream); text-align: left; font-weight: 600;
+  transition: all .15s ease; min-height: 56px; display: flex; align-items: center; gap: 12px;
+}
+.choice:active { transform: scale(.97); }
+.choice.sel { border-color: var(--gold); background: rgba(0,180,180,.35); box-shadow: 0 0 0 3px rgba(255,215,0,.3); }
+.emoji-card {
+  background: rgba(13,92,156,.35); border: 3px solid transparent; border-radius: 20px;
+  padding: 14px 8px; text-align: center; transition: all .15s ease; min-height: 90px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+}
+.emoji-card .e { font-size: 40px; line-height: 1; }
+.emoji-card .l { font-size: 14px; color: var(--foam); font-weight: 600; }
+.emoji-card.sel { border-color: var(--gold); background: rgba(0,180,180,.4); transform: scale(1.04); }
+.emoji-card:active { transform: scale(.96); }
 
-  .bottombar { position: absolute; bottom: 0; left: 0; right: 0; display: flex; gap: 8px; padding: 14px; justify-content: center; flex-wrap: wrap; z-index: 5; background: linear-gradient(transparent, rgba(10,22,40,.6)); }
-  .actbtn { min-width: 70px; min-height: 64px; border-radius: 18px; background: rgba(13,79,124,.85); border: 1px solid rgba(127,215,232,.3); color:#fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 26px; font-weight: 700; }
-  .actbtn span { font-size: 11px; }
-  .mic { min-width: 84px; background: linear-gradient(135deg, var(--coral), #e85555); font-size: 32px; box-shadow: 0 6px 18px rgba(255,107,107,.5); }
-  .mic.on { animation: pulse 1s infinite; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(127,215,232,.15); }
+.toggle { width: 58px; height: 32px; border-radius: 18px; background: rgba(6,20,40,.7); position: relative; transition: background .2s; flex: 0 0 auto; }
+.toggle.on { background: var(--success); }
+.toggle .knob { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; transition: left .2s; }
+.toggle.on .knob { left: 29px; }
 
-  .wave { display: flex; gap: 4px; align-items: flex-end; height: 40px; justify-content: center; margin: 10px 0; }
-  .wave i { width: 6px; background: var(--teal); border-radius: 4px; animation: wv .8s ease-in-out infinite; }
-  @keyframes wv { 0%,100%{ height: 8px } 50%{ height: 36px } }
+.speech-bubble {
+  background: var(--cream); color: #0a2540; border-radius: 24px; padding: 18px 22px;
+  font-size: clamp(18px,4.5vw,26px); font-weight: 700; line-height: 1.3; max-width: 640px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35); position: relative; text-align: center;
+}
+.speech-bubble::after {
+  content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+  border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 18px solid var(--cream);
+}
+.companion { font-size: 120px; line-height: 1; filter: drop-shadow(0 10px 24px rgba(0,0,0,.5)); animation: bob 3.2s ease-in-out infinite; }
+@keyframes bob { 0%,100%{ transform: translateY(0) rotate(-2deg);} 50%{ transform: translateY(-18px) rotate(2deg);} }
+.no-anim .companion { animation: none; }
 
-  .pecs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; max-width: 480px; margin: 0 auto; }
-  .pecs { background: var(--cream); color: var(--deep); border-radius: 16px; padding: 14px 8px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 90px; }
-  .pecs .e { font-size: 40px; }
-  .pecs .t { font-size: 14px; }
+.badge { background: rgba(6,20,40,.7); border: 1px solid rgba(127,215,232,.4); border-radius: 20px; padding: 8px 16px; font-size: 16px; font-weight: 700; color: var(--foam); }
+.badge.warn { background: rgba(255,107,107,.35); border-color: var(--coral); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
 
-  .overlay { position: fixed; inset: 0; z-index: 50; background: rgba(10,22,40,.85); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 20px; }
-  .modal { width: 100%; max-width: 560px; }
-  .celebrate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-  .celebrate .txt { font-size: 44px; font-weight: 900; color: var(--gold); text-shadow: 0 4px 20px rgba(0,0,0,.5); animation: pop .6s ease; }
-  @keyframes pop { 0%{ transform: scale(0) } 60%{ transform: scale(1.2) } 100%{ transform: scale(1) } }
-  .confetti { position: absolute; font-size: 30px; animation: fall 1.4s ease-in forwards; }
-  @keyframes fall { 0%{ transform: translateY(-40px) scale(.5); opacity: 1 } 100%{ transform: translateY(60vh) scale(1.3); opacity: 0 } }
+.topbar { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; z-index: 6; gap: 8px; }
+.navbar {
+  position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 6px; padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+  background: rgba(6,20,40,.85); backdrop-filter: blur(12px); z-index: 6; overflow-x: auto; justify-content: flex-start;
+}
+.nav-btn { flex: 0 0 auto; min-width: 64px; min-height: 56px; border-radius: 16px; background: rgba(13,92,156,.4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--foam); font-size: 11px; font-weight: 700; padding: 4px; }
+.nav-btn .ne { font-size: 24px; }
+.nav-btn.active { background: var(--teal); }
 
-  .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
-  .tab { padding: 10px 16px; border-radius: 30px; background: rgba(255,255,255,.08); font-weight: 700; font-size: 14px; }
-  .tab.on { background: var(--teal); }
-  .stat { background: rgba(13,79,124,.5); border-radius: 16px; padding: 16px; text-align: center; }
-  .stat .n { font-size: 32px; font-weight: 900; color: var(--light); }
-  .stat .l { font-size: 13px; opacity: .85; margin-top: 4px; }
-  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .bar-track { height: 14px; border-radius: 10px; background: rgba(255,255,255,.15); overflow: hidden; margin: 8px 0; }
-  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--light)); border-radius: 10px; transition: width .4s; }
-  .tip { display: flex; gap: 12px; align-items: flex-start; }
-  .tip .ic { font-size: 28px; }
-  .crt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 12px; }
-  .crt { background: rgba(13,79,124,.5); border-radius: 16px; padding: 14px; text-align: center; border: 1px solid rgba(127,215,232,.25); }
-  .crt .e { font-size: 46px; }
-  .crt .n { font-weight: 800; margin-top: 6px; }
-  .crt .d { font-size: 11px; opacity: .7; margin-top: 2px; }
-  .pin-dots { display: flex; gap: 12px; justify-content: center; margin: 18px 0; }
-  .pin-dots div { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--light); }
-  .pin-dots div.f { background: var(--gold); border-color: var(--gold); }
-  .keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; max-width: 260px; margin: 0 auto; }
-  .keypad button { min-height: 56px; font-size: 24px; font-weight: 800; border-radius: 14px; background: rgba(255,255,255,.1); color: #fff; }
-  .scroll { max-height: 88vh; overflow-y: auto; }
-  .gameopt { background: var(--cream); color: var(--deep); border-radius: 18px; padding: 18px; font-size: 40px; font-weight: 800; display:flex; flex-direction:column; align-items:center; gap:6px; min-height: 100px; }
-  .gameopt span { font-size: 16px; }
-  ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: rgba(127,215,232,.4); border-radius: 4px; }
+.mic-btn {
+  width: 130px; height: 130px; border-radius: 50%; font-size: 56px;
+  background: radial-gradient(circle at 35% 30%, var(--coral), #c0392b);
+  box-shadow: 0 0 0 8px rgba(255,107,107,.2), 0 12px 30px rgba(0,0,0,.4); color: #fff; border: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.mic-btn.listening { animation: micpulse 1.1s infinite; background: radial-gradient(circle at 35% 30%, var(--gold), #ff9d00); }
+@keyframes micpulse { 0%,100%{ box-shadow: 0 0 0 8px rgba(255,215,0,.25), 0 12px 30px rgba(0,0,0,.4);} 50%{ box-shadow: 0 0 0 26px rgba(255,215,0,0), 0 12px 30px rgba(0,0,0,.4);} }
+
+.waveform { display: flex; gap: 5px; align-items: flex-end; height: 40px; }
+.waveform span { width: 6px; background: var(--gold); border-radius: 3px; animation: wave .9s ease-in-out infinite; }
+@keyframes wave { 0%,100%{ height: 8px;} 50%{ height: 38px;} }
+
+.confetti-piece { position: fixed; width: 12px; height: 12px; z-index: 50; pointer-events: none; animation: fall 1.6s ease-in forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+.pecs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 480px; }
+.pecs-card { background: var(--cream); color: #0a2540; border-radius: 16px; padding: 12px 6px; text-align: center; font-weight: 800; min-height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.pecs-card .pe { font-size: 38px; }
+.pecs-card .pl { font-size: 14px; }
+.pecs-card:active { transform: scale(.95); }
+
+.tabbar { display: flex; gap: 6px; overflow-x: auto; padding: 6px; background: rgba(6,20,40,.6); border-radius: 16px; margin-bottom: 16px; }
+.tab { flex: 1 0 auto; padding: 10px 16px; border-radius: 12px; background: transparent; color: var(--light); font-weight: 700; font-size: 15px; white-space: nowrap; }
+.tab.active { background: var(--teal); color: #fff; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 12px; }
+.stat { background: rgba(6,20,40,.5); border-radius: 16px; padding: 14px; text-align: center; }
+.stat .v { font-size: 30px; font-weight: 900; color: var(--gold); }
+.stat .k { font-size: 13px; color: var(--light); margin-top: 4px; }
+
+.pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--foam); }
+.pin-dot.f { background: var(--gold); border-color: var(--gold); }
+.keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; max-width: 280px; margin: 0 auto; }
+.key { min-height: 64px; border-radius: 16px; font-size: 26px; font-weight: 800; background: rgba(13,92,156,.4); color: var(--cream); }
+
+.aq-card { background: rgba(13,92,156,.3); border: 1px solid rgba(127,215,232,.3); border-radius: 18px; padding: 14px; text-align: center; }
+.aq-card .ae { font-size: 48px; }
+.aq-card .an { font-weight: 800; margin-top: 6px; }
+.aq-card .ad { font-size: 12px; color: var(--light); margin-top: 4px; }
+.zone-banner { background: linear-gradient(135deg, rgba(0,180,180,.4), rgba(13,92,156,.4)); border-radius: 14px; padding: 10px 16px; font-weight: 800; margin: 16px 0 10px; }
+.zone-banner.locked { opacity: .45; }
+
+.progress-bar { height: 14px; border-radius: 10px; background: rgba(6,20,40,.6); overflow: hidden; }
+.progress-bar > div { height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold)); transition: width .4s; }
+
+.timeline { display: flex; gap: 4px; }
+.timeline .step { flex: 1; text-align: center; }
+.timeline .dot { width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; font-weight: 800; background: rgba(6,20,40,.6); border: 2px solid rgba(127,215,232,.3); }
+.timeline .dot.done { background: var(--success); border-color: var(--success); }
+.timeline .dot.cur { background: var(--gold); border-color: var(--gold); color: #3a2400; }
+.timeline .lbl { font-size: 10px; color: var(--light); }
+
+.tip-card { background: rgba(13,92,156,.3); border-left: 4px solid var(--gold); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.tip-card .tt { font-weight: 800; font-size: 17px; margin-bottom: 6px; }
+.tip-card .tb { font-size: 15px; color: var(--foam); line-height: 1.4; }
+
+.scroll-pad { padding: 20px 16px 100px; max-width: 760px; margin: 0 auto; }
+.mic-error { background: rgba(255,107,107,.25); border: 1px solid var(--coral); border-radius: 14px; padding: 12px; font-size: 14px; margin-top: 12px; max-width: 480px; }
+
+.high-contrast { background: #000a1a !important; }
+.high-contrast .card, .high-contrast .choice, .high-contrast .emoji-card, .high-contrast .stat, .high-contrast .aq-card, .high-contrast .tip-card { background: #001233 !important; backdrop-filter: none !important; }
+.high-contrast .speech-bubble { background: #fff !important; }
+.high-contrast { font-size: 1.08em; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(127,215,232,.3); border-radius: 4px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.muted { color: var(--light); font-size: 14px; }
+h2.sect { font-size: 22px; margin: 18px 0 10px; color: var(--foam); }
+h3.sub { font-size: 17px; margin: 14px 0 8px; color: var(--light); }
+textarea.input { min-height: 120px; resize: vertical; font-size: 15px; }
+table.rep { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.rep th { color: var(--light); text-align: center; padding: 4px; }
+table.rep td { padding: 4px; border-top: 1px solid rgba(127,215,232,.15); }
 </style>
 </head>
 <body>
-<canvas id="bgCanvas"></canvas>
 <div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-<script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
-
-/* ---------------- Canvas underwater background ---------------- */
-(function() {
-  const canvas = document.getElementById('bgCanvas');
-  const ctx = canvas.getContext('2d');
-  let W, H, bubbles = [], particles = [], fish = [], t = 0;
-  function reduced() { try { return JSON.parse(localStorage.getItem('oceanVoices')||'{}').sensoryMode; } catch(e){ return false; } }
-  function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
-  resize(); addEventListener('resize', resize);
-  function rnd(a,b){ return a + Math.random()*(b-a); }
-  for (let i=0;i<28;i++) bubbles.push({ x: rnd(0,W), y: rnd(0,H), r: rnd(5,15), sp: rnd(.3,1.1), drift: rnd(-.3,.3) });
-  for (let i=0;i<40;i++) particles.push({ x: rnd(0,W), y: rnd(0,H), r: rnd(.5,2), ph: rnd(0,6.28), sp: rnd(.002,.01) });
-  const fishEmo = ['🐟','🐠','🐡'];
-  for (let i=0;i<4;i++) fish.push({ x: rnd(0,W), y: rnd(60,H-120), sp: rnd(.2,.6)*(Math.random()<.5?-1:1), e: fishEmo[i%3], s: rnd(20,38) });
-  function loop() {
-    t++;
-    const r = reduced();
-    const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,'#0a1628'); g.addColorStop(.5,'#0d4f7c'); g.addColorStop(1,'#063a5a');
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-    ctx.save();
-    const rayCount = r ? 2 : 4;
-    for (let i=0;i<rayCount;i++) {
-      const x = (W/rayCount)*i + Math.sin(t*0.005 + i)*40;
-      const grd = ctx.createLinearGradient(x, 0, x+120, H);
-      grd.addColorStop(0,'rgba(127,215,232,0.10)'); grd.addColorStop(1,'rgba(127,215,232,0)');
-      ctx.fillStyle = grd; ctx.beginPath();
-      ctx.moveTo(x,0); ctx.lineTo(x+80,0); ctx.lineTo(x+200,H); ctx.lineTo(x+40,H); ctx.closePath(); ctx.fill();
-    }
-    ctx.restore();
-    if (!r) particles.forEach(p => {
-      p.ph += p.sp; const a = (Math.sin(p.ph)+1)/2;
-      ctx.fillStyle = `rgba(127,215,232,${0.1+a*0.5})`;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.28); ctx.fill();
-    });
-    fish.forEach(f => {
-      f.x += f.sp * (r?0.4:1);
-      if (f.x>W+40) f.x=-40; if (f.x<-40) f.x=W+40;
-      ctx.save(); ctx.globalAlpha=.5; ctx.font = f.s+'px serif';
-      if (f.sp<0){ ctx.translate(f.x,f.y); ctx.scale(-1,1); ctx.fillText(f.e,0,0);} else ctx.fillText(f.e,f.x,f.y);
-      ctx.restore();
-    });
-    bubbles.forEach(b => {
-      b.y -= b.sp*(r?0.4:1); b.x += Math.sin(t*0.02+b.y*0.01)*b.drift;
-      if (b.y < -20){ b.y = H+20; b.x = rnd(0,W); }
-      ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.28); ctx.stroke();
-      ctx.fillStyle='rgba(127,215,232,0.08)'; ctx.fill();
-    });
-    requestAnimationFrame(loop);
-  }
-  loop();
-})();
-
-/* ---------------- State / persistence ---------------- */
-const DEFAULT = {
-  childName: "Friend", childAge: 4, ageBand: 1, communicationLevel: 2,
-  interests: [], sensoryMode: false, pecsMode: false,
-  companionName: "Shelly", companionType: "turtle", personality: "playful",
-  stage: 1, wordsAttempted: [], wordsMastered: [],
-  aquarium: [
-    { type: "turtle", emoji: "🐢", name: "Shelly the Turtle", date: "Starter" },
-    { type: "clownfish", emoji: "🐠", name: "Finn the Clownfish", date: "Starter" },
-    { type: "seahorse", emoji: "🦄", name: "Coral the Seahorse", date: "Starter" }
-  ],
-  totalAttempts: 0, totalSessions: 0, sessionHistory: [], sessionLimit: 20, setupDone: false
-};
-function loadState() {
-  try { const s = JSON.parse(localStorage.getItem('oceanVoices')); return s ? { ...DEFAULT, ...s } : { ...DEFAULT }; }
-  catch(e) { return { ...DEFAULT }; }
-}
-function saveState(s) { localStorage.setItem('oceanVoices', JSON.stringify(s)); }
-
-const COMPANION_EMOJI = { turtle:"🐢", dolphin:"🐬", octopus:"🐙", whale:"🐋" };
-const INTERESTS = [
-  {id:"turtles",label:"Sea turtles 🐢"},{id:"dolphins",label:"Dolphins 🐬"},
-  {id:"octopuses",label:"Octopuses 🐙"},{id:"sharks",label:"Sharks 🦈"},
-  {id:"seahorses",label:"Seahorses 🦄"},{id:"treasure",label:"Treasure 💎"},
-  {id:"colours",label:"Colours 🌈"},{id:"counting",label:"Counting 🔢"}
-];
-const COMM_LEVELS = [
-  "Uses single sounds/gestures only","Uses single words","Uses 2-3 word phrases",
-  "Uses short sentences","Has conversational language"
-];
-const STAGE_NAMES = ["", "Single Words", "Two-Word Phrases", "Short Sentences", "Conversations", "Fluent Chatter"];
-
-/* ---------------- Text-to-Speech helper ---------------- */
-function speak(text, opts = {}) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/[🌊🐢🐬🦑🫧⭐💙🌟✨🐠💎👋🎤🔒🐟]/gu, ''));
-  u.rate = opts.rate || 0.88;
-  u.pitch = opts.pitch || 1.1;
-  u.volume = opts.volume || 1;
-  // prefer a female English voice when available
-  const voices = window.speechSynthesis.getVoices();
-  const pick = voices.find(v => /en[-_](GB|US|AU)/i.test(v.lang) && /female|woman|girl|samantha|karen|victoria|moira|tessa|fiona|kate/i.test(v.name))
-            || voices.find(v => /en[-_]/i.test(v.lang));
-  if (pick) u.voice = pick;
-  window.speechSynthesis.speak(u);
-}
-// Ensure voices are loaded (Chrome lazy-loads them)
-if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
-  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-}
-
-/* ---------------- AudioContext sound effects ---------------- */
-function playTone(freq = 440, type = 'sine', dur = 0.18, vol = 0.18) {
+/* ============================ AUDIO ============================ */
+let QUIET = false, NO_SUDDEN = false;
+function playTone(freq, type='sine', dur=0.18, vol=0.15) {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.type = type; osc.frequency.value = freq;
     gain.gain.setValueAtTime(vol, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    osc.start(); osc.stop(ctx.currentTime + dur);
-    setTimeout(() => ctx.close(), dur * 1000 + 100);
-  } catch(e) {}
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+    osc.start(); osc.stop(ctx.currentTime+dur);
+    setTimeout(()=>ctx.close(), dur*1000+200);
+  } catch(e){}
 }
-function playCelebration() {
-  [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.22, 0.15), i * 90));
-}
-function playPop() { playTone(880, 'sine', 0.1, 0.12); }
-function playTap() { playTone(660, 'triangle', 0.08, 0.1); }
-function playListening() { playTone(440, 'sine', 0.12, 0.08); setTimeout(() => playTone(550, 'sine', 0.12, 0.08), 130); }
+function playCelebration(){ if(QUIET||NO_SUDDEN) return; [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.25,0.13),i*90)); }
+function playPop(){ if(QUIET) return; playTone(880,'sine',0.1,0.1); }
+function playTap(){ if(QUIET) return; playTone(660,'triangle',0.08,0.09); }
+function playListening(){ if(QUIET) return; playTone(440,'sine',0.12,0.07); setTimeout(()=>playTone(550,'sine',0.12,0.07),130); }
+function playReward(){ if(QUIET||NO_SUDDEN) return; [784,1047,1319].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.3,0.12),i*120)); }
 
-/* ---------------- Speech recognition hook ---------------- */
+/* ============================ TTS ============================ */
+function speak(text, opts={}) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(String(text).replace(/\p{Emoji}/gu,''));
+  u.rate = opts.rate||0.88; u.pitch = opts.pitch||1.1; u.volume = (QUIET?0.5:1)*(opts.volume||1);
+  const voices = window.speechSynthesis.getVoices();
+  let v;
+  if (opts.male) v = voices.find(v=>/en[-_](GB|US|AU)/i.test(v.lang)&&/male|daniel|alex|fred|david|james/i.test(v.name));
+  if (!v) v = voices.find(v=>/en[-_](GB|US|AU)/i.test(v.lang)&&/female|samantha|karen|victoria|moira|tessa|fiona|kate/i.test(v.name));
+  if (!v) v = voices.find(v=>/en[-_]/i.test(v.lang));
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
+}
+if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined)
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+/* ============================ SPEECH RECOGNITION ============================ */
 function useSpeech() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recRef = useRef(null);
   const [available, setAvailable] = useState(!!SR);
   const [micError, setMicError] = useState(null);
-
   const listen = useCallback((onResult, onEnd) => {
     if (!SR) { setAvailable(false); onEnd && onEnd(null); return; }
-
-    // Stop TTS first — browser blocks mic while audio is playing
     if (window.speechSynthesis) window.speechSynthesis.cancel();
-
-    const startRec = () => {
+    setTimeout(() => {
       try {
         const r = new SR(); recRef.current = r;
         r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3; r.continuous = false;
         let got = null;
-        r.onresult = e => {
-          got = Array.from(e.results[0]).map(alt => alt.transcript).join(' ').toLowerCase().trim();
-          setMicError(null);
-          onResult(got);
-        };
+        r.onresult = e => { got = Array.from(e.results[0]).map(a=>a.transcript).join(' ').toLowerCase().trim(); setMicError(null); onResult(got); };
         r.onend = () => onEnd && onEnd(got);
-        r.onerror = (e) => {
+        r.onerror = e => {
           const msg = e.error;
-          if (msg === 'not-allowed' || msg === 'service-not-allowed') {
-            setAvailable(false);
-            setMicError('Microphone permission denied. Tap your browser address bar and allow microphone access, then reload.');
-          } else if (msg === 'no-speech') {
-            setMicError(null);
-          } else if (msg === 'network') {
-            setMicError('Speech recognition needs an internet connection (Chrome requires https://).');
-          } else if (msg === 'audio-capture') {
-            setMicError('No microphone found. Please connect a microphone and try again.');
-          } else {
-            setMicError('Microphone error: ' + msg + '. Try reloading the page.');
-          }
+          if (msg==='not-allowed'||msg==='service-not-allowed') { setAvailable(false); setMicError('Microphone permission denied. Allow mic access in browser settings and reload.'); }
+          else if (msg==='network') setMicError('Speech recognition needs https:// or localhost.');
+          else if (msg==='audio-capture') setMicError('No microphone found.');
+          else if (msg!=='no-speech') setMicError('Mic error: '+msg);
           onEnd && onEnd(null);
         };
         r.start();
-      } catch(e) {
-        setMicError('Could not start microphone: ' + (e.message || e));
-        onEnd && onEnd(null);
-      }
-    };
-
-    // 200ms gap lets the audio pipeline release after TTS cancel
-    setTimeout(startRec, 200);
+      } catch(e) { setMicError('Could not start mic: '+(e.message||e)); onEnd && onEnd(null); }
+    }, 200);
   }, [SR]);
-
   const stop = useCallback(() => { try { recRef.current && recRef.current.stop(); } catch(e){} }, []);
-  return { available, listen, stop, micError };
+  return { available, listen, stop, micError, setMicError };
 }
 
-/* ---------------- Helpers ---------------- */
-function ageBandFor(age){ return age<=5?1:age<=7?2:3; }
-function ageBandName(b){ return b===1?"Early Learners":b===2?"Developing Communicators":"Growing Communicators"; }
-function todayStr(){ return new Date().toISOString().slice(0,10); }
-function levenshtein(a,b){
-  const m=[...Array(a.length+1)].map((_,i)=>[i,...Array(b.length).fill(0)]);
-  for(let j=0;j<=b.length;j++)m[0][j]=j;
-  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)
-    m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
-  return m[a.length][b.length];
-}
-function matchTier(said, target) {
-  if (!said) return "silence";
-  const t = target.toLowerCase();
-  if (said === t || said.split(/\s+/).includes(t)) return "exact";
-  if (said.includes(t) || t.includes(said) || levenshtein(said, t) <= 2) return "close";
-  return "any";
-}
+/* ============================ DATA ============================ */
+const WORD_BANKS = {
+  1: [
+    {word:"fish",emoji:"🐟"},{word:"turtle",emoji:"🐢"},{word:"whale",emoji:"🐋"},
+    {word:"blue",emoji:"💙"},{word:"big",emoji:"⬆️"},{word:"more",emoji:"➕"},
+    {word:"yes",emoji:"✅"},{word:"hello",emoji:"👋"},{word:"bye",emoji:"👋"},
+    {word:"help",emoji:"🤝"},{word:"swim",emoji:"🏊"},{word:"eat",emoji:"🍽️"},
+    {word:"red",emoji:"❤️"},{word:"green",emoji:"💚"},{word:"happy",emoji:"😊"},
+  ],
+  2: [
+    {word:"blue fish",emoji:"🐟"},{word:"big whale",emoji:"🐋"},{word:"more bubbles",emoji:"🫧"},
+    {word:"swim fast",emoji:"🏊"},{word:"happy turtle",emoji:"🐢"},{word:"red coral",emoji:"🪸"},
+    {word:"want fish",emoji:"🐟"},{word:"found it",emoji:"🎉"},{word:"help me",emoji:"🤝"},
+  ],
+  3: [
+    {word:"what is this",emoji:"❓"},{word:"can I see",emoji:"👀"},{word:"where is it",emoji:"📍"},
+    {word:"what colour",emoji:"🎨"},{word:"how many",emoji:"🔢"},{word:"who is that",emoji:"👤"},
+  ],
+  4: [
+    {word:"the fish is blue",emoji:"🐟"},{word:"I found a treasure",emoji:"💎"},
+    {word:"the turtle is hiding",emoji:"🐢"},{word:"I want to swim",emoji:"🏊"},
+  ],
+  5: [
+    {word:"tell me a story",emoji:"📖"},{word:"what happened next",emoji:"❓"},
+  ],
+  6: [
+    {word:"once upon a time",emoji:"📖"},{word:"and then",emoji:"➡️"},
+  ],
+};
 
-/* ---------------- Celebration overlay ---------------- */
-function Celebration({ text }) {
-  const items = ["⭐","🫧","💙","🌟","✨","🐠","💎","🌊"];
-  return (
-    <div className="celebrate">
-      {[...Array(16)].map((_,i)=>(
-        <div key={i} className="confetti" style={{ left: (5+i*6)+"%", animationDelay: (i*0.04)+"s", top: "10%" }}>
-          {items[i%items.length]}
-        </div>
-      ))}
-      <div className="txt">{text}</div>
-    </div>
-  );
-}
-function celebrateInline(setMsg, txt) { setMsg(txt); setTimeout(()=>setMsg(null), 1400); }
-
-/* ---------------- Welcome ---------------- */
-function Welcome({ onChild, onParent }) {
-  return (
-    <div className="center-col">
-      <div className="logo">🌊 Oral</div>
-      <div className="tagline">A magical underwater friendship that quietly teaches communication</div>
-      <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center'}}>
-        <button className="btn gold" onClick={onChild}>Start Adventure 🐠</button>
-        <button className="btn ghost" onClick={onParent}>Parent Setup ⚙️</button>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------- Setup Wizard ---------------- */
-function Wizard({ state, setState, onDone }) {
-  const [step, setStep] = useState(1);
-  const [d, setD] = useState({ ...state });
-  const up = (k,v)=> setD(p=>({ ...p, [k]:v }));
-  const toggleArr = (k,v)=> setD(p=>({ ...p, [k]: p[k].includes(v) ? p[k].filter(x=>x!==v) : [...p[k],v] }));
-  const next = ()=> setStep(s=>Math.min(4,s+1));
-  const back = ()=> setStep(s=>Math.max(1,s-1));
-  const band = ageBandFor(d.childAge);
-  const save = () => {
-    const ns = { ...state, ...d, ageBand: band, setupDone: true };
-    setState(ns); saveState(ns); onDone();
-  };
-  return (
-    <div className="center-col">
-      <div className="panel scroll">
-        <div className="steps">{[1,2,3,4].map(i=><div key={i} className={"dot"+(i<=step?" on":"")}/>)}</div>
-
-        {step===1 && <>
-          <h2>Child Profile</h2><div className="sub">Tell us about your child</div>
-          <label>Child's name</label>
-          <input type="text" value={d.childName} onChange={e=>up('childName',e.target.value)} />
-          <label>Age: {d.childAge}</label>
-          <input type="range" min="3" max="10" value={d.childAge} onChange={e=>up('childAge',+e.target.value)} />
-          <div className="card" style={{marginTop:14}}>
-            <b>Age Band:</b> {ageBandName(band)} <br/>
-            <small style={{opacity:.8}}>Band {band} ({band===1?"3-5":band===2?"6-7":"8-10"} years)</small>
-          </div>
-        </>}
-
-        {step===2 && <>
-          <h2>Communication Level</h2><div className="sub">How does your child usually communicate?</div>
-          {COMM_LEVELS.map((c,i)=>(
-            <div key={i} className={"opt"+(d.communicationLevel===i+1?" active":"")} style={{marginBottom:8}}
-                 onClick={()=>up('communicationLevel',i+1)}>{c}</div>
-          ))}
-        </>}
-
-        {step===3 && <>
-          <h2>Interests & Sensory</h2><div className="sub">Pick what your child loves</div>
-          <div className="pill-grid">
-            {INTERESTS.map(it=>(
-              <div key={it.id} className={"opt"+(d.interests.includes(it.id)?" active":"")} onClick={()=>toggleArr('interests',it.id)}>{it.label}</div>
-            ))}
-          </div>
-          <div className="card row" style={{marginTop:16}}>
-            <div><b>Reduced sensory mode</b><br/><small style={{opacity:.8}}>Less animation, quieter</small></div>
-            <div className={"toggle"+(d.sensoryMode?" on":"")} onClick={()=>up('sensoryMode',!d.sensoryMode)}><div className="knob"/></div>
-          </div>
-          <div className="card row">
-            <div><b>Touch / PECS mode</b><br/><small style={{opacity:.8}}>No speech required</small></div>
-            <div className={"toggle"+(d.pecsMode?" on":"")} onClick={()=>up('pecsMode',!d.pecsMode)}><div className="knob"/></div>
-          </div>
-        </>}
-
-        {step===4 && <>
-          <h2>Companion Setup</h2><div className="sub">Create your ocean friend</div>
-          <label>Companion name</label>
-          <input type="text" value={d.companionName} onChange={e=>up('companionName',e.target.value)} />
-          <label>Companion type</label>
-          <div className="pill-grid">
-            {Object.entries(COMPANION_EMOJI).map(([k,e])=>(
-              <div key={k} className={"opt big"+(d.companionType===k?" active":"")} onClick={()=>up('companionType',k)}>
-                {e}<span>{k}</span>
-              </div>
-            ))}
-          </div>
-          <label>Personality</label>
-          <div className="pill-grid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
-            {["playful","calm","adventurous"].map(p=>(
-              <div key={p} className={"opt"+(d.personality===p?" active":"")} onClick={()=>up('personality',p)}>{p}</div>
-            ))}
-          </div>
-        </>}
-
-        <div className="row" style={{marginTop:22}}>
-          <button className="btn ghost sm" onClick={back} disabled={step===1} style={{opacity:step===1?.3:1}}>← Back</button>
-          {step<4 ? <button className="btn sm" onClick={next}>Next →</button>
-                  : <button className="btn gold sm" onClick={save}>Save & Dive In 🌊</button>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------- Dialogue / scaffolding ---------------- */
-const WORD_BANK = [
-  {word:"fish", emoji:"🐟"},{word:"turtle", emoji:"🐢"},{word:"dolphin", emoji:"🐬"},
-  {word:"crab", emoji:"🦀"},{word:"star", emoji:"⭐"},{word:"blue", emoji:"🔵"},
-  {word:"octopus", emoji:"🐙"},{word:"shell", emoji:"🐚"},{word:"whale", emoji:"🐋"}
-];
-function buildPrompt(level, target) {
-  const w = target.word.toUpperCase();
-  switch(level){
-    case 1: return `Can you say... ${w}? ${target.emoji}`;
-    case 2: return `Look, it's a ___ ! Can you say ${w}? ${target.emoji}`;
-    case 3: return `What is this ${target.emoji}? Can you tell me?`;
-    case 4: return `Wow, look who's here ${target.emoji}! What do you see?`;
-    default: return `Hi! Tell me all about this friend ${target.emoji}!`;
-  }
-}
 const REWARD_POOL = [
-  {type:"jelly",emoji:"🪼",name:"Glow the Jellyfish"},{type:"shark",emoji:"🦈",name:"Chomp the Shark"},
-  {type:"crab",emoji:"🦀",name:"Pinch the Crab"},{type:"octopus",emoji:"🐙",name:"Ollie the Octopus"},
-  {type:"whale",emoji:"🐋",name:"Bloo the Whale"},{type:"dolphin",emoji:"🐬",name:"Splash the Dolphin"},
-  {type:"starfish",emoji:"⭐",name:"Twinkle the Starfish"},{type:"pufferfish",emoji:"🐡",name:"Puffy the Pufferfish"}
+  {type:"jellyfish",emoji:"🪼",name:"Glow the Jellyfish",desc:"Lights up the darkest deep with a gentle glow."},
+  {type:"shark",emoji:"🦈",name:"Chomper the Shark",desc:"A friendly shark with the biggest smile in the sea."},
+  {type:"crab",emoji:"🦀",name:"Pinch the Crab",desc:"Scuttles sideways and loves to dance."},
+  {type:"octopus",emoji:"🐙",name:"Ollie the Octopus",desc:"Has eight arms for eight hugs at once."},
+  {type:"whale",emoji:"🐋",name:"Bloo the Whale",desc:"Sings the most beautiful ocean songs."},
+  {type:"dolphin",emoji:"🐬",name:"Splash the Dolphin",desc:"Leaps high and laughs in clicks and whistles."},
+  {type:"starfish",emoji:"⭐",name:"Twinkle the Starfish",desc:"A star that fell into the sea and stayed."},
+  {type:"pufferfish",emoji:"🐡",name:"Puffy the Pufferfish",desc:"Puffs up like a balloon when surprised."},
+  {type:"seal",emoji:"🦭",name:"Sandy the Seal",desc:"Loves sunbathing on warm rocks."},
+  {type:"squid",emoji:"🦑",name:"Inky the Squid",desc:"Paints the water with playful ink swirls."},
+  {type:"fish",emoji:"🐟",name:"Bubbles the Fish",desc:"Blows the roundest bubbles in the reef."},
+  {type:"shrimp",emoji:"🦐",name:"Shrimpy",desc:"Tiny but the bravest of them all."},
+  {type:"shell",emoji:"🐚",name:"Pearl the Shell",desc:"Holds a shiny secret pearl inside."},
+  {type:"fish2",emoji:"🐠",name:"Sunny the Reef Fish",desc:"Bright as sunshine on the coral."},
+  {type:"whale2",emoji:"🐳",name:"Misty the Baby Whale",desc:"Spouts a fountain of happy mist."},
+  {type:"snail",emoji:"🐌",name:"Coral the Sea Snail",desc:"Slow and steady, never in a hurry."},
+  {type:"jelly2",emoji:"🎐",name:"Drift the Jelly",desc:"Floats wherever the current goes."},
+  {type:"penguin",emoji:"🐧",name:"Pip the Penguin",desc:"Waddles on ice and dives like a torpedo."},
+  {type:"otter",emoji:"🦦",name:"Ripple the Otter",desc:"Floats on its back holding a favourite stone."},
+  {type:"frog",emoji:"🐸",name:"Lily the Lagoon Frog",desc:"Sings by the warm treasure lagoon."},
+  {type:"fish3",emoji:"🎏",name:"Streamer the Koi",desc:"Glides like a ribbon through the water."},
+  {type:"star2",emoji:"🌟",name:"Sparkle the Sea Star",desc:"Glitters in the bioluminescent deep."},
+  {type:"wave",emoji:"🌊",name:"Surfy the Wave Sprite",desc:"A playful spirit of the rolling sea."},
+  {type:"anchor",emoji:"⚓",name:"Captain Anchor",desc:"Guards the sunken treasure chest."},
+  {type:"compass",emoji:"🧭",name:"Finder the Compass Crab",desc:"Always points the way to adventure."},
+  {type:"lobster",emoji:"🦞",name:"Clawdia the Lobster",desc:"Has the fanciest red shell in the reef."},
+  {type:"blowfish",emoji:"🐡",name:"Pop the Pufferball",desc:"Bounces happily along the sea floor."},
+  {type:"seaweed",emoji:"🌿",name:"Sway the Kelp Spirit",desc:"Dances in the kelp forest all day."},
+  {type:"turtle2",emoji:"🐢",name:"Speedy the Sea Turtle",desc:"Older and wiser than the oldest reef."},
+  {type:"mermaid",emoji:"🧜",name:"Marina the Sea Explorer",desc:"Knows every secret of the ocean deep."},
 ];
-function addReward(setState) {
-  setState(prev => {
-    const got = REWARD_POOL[(prev.aquarium.length - 3 + REWARD_POOL.length) % REWARD_POOL.length];
-    const ns = { ...prev, aquarium: [...prev.aquarium, { ...got, date: todayStr() }] };
-    saveState(ns); return ns;
-  });
+
+const ZONES = [
+  {id:"coral_reef", name:"Coral Reef", emoji:"🪸", stage:1},
+  {id:"kelp_forest", name:"Kelp Forest (Calm Zone)", emoji:"🌿", stage:0},
+  {id:"ocean_caves", name:"Ocean Caves", emoji:"🕳️", stage:2},
+  {id:"deep_sea", name:"Deep Sea", emoji:"🌑", stage:4},
+  {id:"treasure_lagoon", name:"Treasure Lagoon", emoji:"💎", stage:5},
+];
+
+const COMPANIONS = { turtle:"🐢", dolphin:"🐬", octopus:"🐙", whale:"🐋", shark:"🦈", explorer:"🧜" };
+const COMPANION_LIST = [
+  {id:"turtle",emoji:"🐢",label:"Turtle"},{id:"dolphin",emoji:"🐬",label:"Dolphin"},
+  {id:"octopus",emoji:"🐙",label:"Octopus"},{id:"whale",emoji:"🐋",label:"Whale"},
+  {id:"shark",emoji:"🦈",label:"Shark"},{id:"explorer",emoji:"🧜",label:"Sea Explorer"},
+];
+
+const ANIMAL_OPTS = [
+  {k:"turtles",e:"🐢",l:"Turtles"},{k:"dolphins",e:"🐬",l:"Dolphins"},{k:"octopuses",e:"🐙",l:"Octopuses"},
+  {k:"sharks",e:"🦈",l:"Sharks"},{k:"crabs",e:"🦀",l:"Crabs"},{k:"clownfish",e:"🐠",l:"Clownfish"},
+  {k:"seals",e:"🦭",l:"Seals"},{k:"whales",e:"🐋",l:"Whales"},{k:"squid",e:"🦑",l:"Squid"},
+  {k:"pufferfish",e:"🐡",l:"Pufferfish"},{k:"starfish",e:"⭐",l:"Starfish"},{k:"shrimp",e:"🦐",l:"Shrimp"},
+];
+
+const STAGES = [
+  {n:1,name:"Single Words",desc:"Saying one word at a time"},
+  {n:2,name:"Two-Word Phrases",desc:"Putting two words together"},
+  {n:3,name:"Simple Questions",desc:"Asking simple questions"},
+  {n:4,name:"Short Conversations",desc:"Having short back-and-forth chats"},
+  {n:5,name:"Full Conversations",desc:"Talking in full conversations"},
+  {n:6,name:"Storytelling & Social",desc:"Telling stories and social play"},
+];
+
+const SCENARIOS = [
+  {title:"Meeting a new child at school", lines:["A new child waves: \"Hi! I'm Sam. What's your name?\"","Sam asks: \"Do you want to play with me?\"","Sam asks: \"What do you like to do?\"","Sam says: \"That's so cool! Let's be friends!\""]},
+  {title:"Asking to join a game", lines:["Children are playing tag in the playground.","One child says: \"We're playing tag!\"","You'd like to join. What could you say?","They smile: \"Sure, you can play with us!\""]},
+  {title:"Talking to a teacher", lines:["Your teacher asks: \"How are you today?\"","Teacher says: \"Can you help me hand out the books?\"","Teacher asks: \"Did you have a good weekend?\"","Teacher smiles: \"Thank you for sharing!\""]},
+  {title:"Ordering food at a café", lines:["The server asks: \"Hello! What would you like?\"","Server asks: \"Would you like a drink with that?\"","Server says: \"That will be just a moment.\"","Server says: \"Here you go, enjoy!\""]},
+  {title:"Explaining feelings", lines:["A grown-up asks: \"How are you feeling?\"","They ask: \"Can you tell me what made you feel that way?\"","They say: \"It's okay to feel like that.\"","They say: \"Thank you for telling me how you feel.\""]},
+  {title:"Describing what happened at school", lines:["A parent asks: \"What did you do at school today?\"","They ask: \"Who did you play with?\"","They ask: \"What was your favourite part?\"","They say: \"That sounds like a wonderful day!\""]},
+  {title:"Handling a change in routine", lines:["Plans changed: \"We can't go to the park today.\"","They explain: \"It's raining, so we'll go tomorrow.\"","They ask: \"Shall we do something fun inside instead?\"","They say: \"You handled that change so well!\""]},
+  {title:"Discussing interests with a peer", lines:["A friend says: \"I love dinosaurs! Do you?\"","They ask: \"What's your favourite thing?\"","They ask: \"Can you tell me more about it?\"","They say: \"Wow, I want to learn about that too!\""]},
+];
+
+const COACH_TIPS = [
+  {e:"⏳",t:"Wait five seconds",b:"After asking a question, count to five silently. The pause creates space for [NAME] to find and produce words."},
+  {e:"➕",t:"Expand their words",b:"If [NAME] says 'fish', you say 'Yes! A big blue fish!' Adding one or two words models the next step."},
+  {e:"🔀",t:"Offer two choices",b:"Instead of open questions, try 'Do you want the dolphin or the turtle?' Choices make responding easier."},
+  {e:"👉",t:"Follow their lead",b:"If [NAME] points to something, name it and talk about it. Joining their interest builds connection."},
+  {e:"🎉",t:"Celebrate every attempt",b:"Effort matters far more than accuracy. Cheer any sound, point, or look — communication is communication."},
+  {e:"🛁",t:"Practice in real life",b:"Use the same target words at bath time, dinner, and outdoors. Repetition in daily life builds lasting language."},
+  {e:"👀",t:"Watch for signals",b:"A glance, a reach, or a point is communication too. Respond to these signals to encourage more."},
+  {e:"🌟",t:"End on a high note",b:"Keep sessions short and finish while [NAME] is still enjoying it. A happy ending invites them back."},
+];
+
+const today = () => new Date().toISOString().slice(0,10);
+const ageBandFor = (age) => age<=5 ? 1 : age<=7 ? 2 : 3;
+const BAND_NAMES = {1:"Early Learners 🌟",2:"Developing Communicators 🚀",3:"Growing Communicators 🌊"};
+
+const DEFAULT_STATE = {
+  setupDone:false, childName:"Ellie", childAge:4, ageBand:1, diagnosisFlags:[],
+  communicationLevel:2, interests:["turtles","dolphins"], sensoryMode:false, quietMode:false,
+  noSuddenSounds:false, highContrast:false, pecsMode:false, sessionTimeLimit:20,
+  companionName:"Shelly", companionType:"turtle", personality:"playful", voiceMale:false, stage:1,
+  stageProgress:{ attempts:0, successes:0, sessions:0, activities:[] },
+  wordsAttempted:[], wordsMastered:[], customVocabulary:[],
+  aquarium:[
+    {type:"turtle",emoji:"🐢",name:"Shelly the Turtle",desc:"Your very first friend, wise and kind.",date:today()},
+    {type:"clownfish",emoji:"🐠",name:"Finn the Clownfish",desc:"A cheerful little fish who loves to play.",date:today()},
+    {type:"seahorse",emoji:"🐚",name:"Pearl the Seahorse",desc:"Gentle and graceful, drifts through the reef.",date:today()},
+  ],
+  zonesUnlocked:["coral_reef","kelp_forest"], totalAttempts:0, totalSessions:0,
+  sessionHistory:[], milestones:[], therapistGoals:[], customActivities:[],
+  therapistNotes:"", therapistName:"", goalReviewDate:"", coachingTipsRead:[], lastSessionDate:null, lastSessionSummary:"",
+  _sessionRewards:0
+};
+
+const KEY = "oral_v2";
+function loadState() {
+  try { const raw = localStorage.getItem(KEY); if (raw) return {...DEFAULT_STATE, ...JSON.parse(raw)}; } catch(e){}
+  return {...DEFAULT_STATE};
 }
+function saveState(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
 
-/* ---------------- Main Underwater World ---------------- */
-function World({ state, setState, openGame, openAquarium, openParent }) {
-  const [mood, setMood] = useState("GREETING");
-  const [text, setText] = useState("");
-  const [target, setTarget] = useState(WORD_BANK[0]);
-  const [celebrate, setCelebrate] = useState(null);
-  const speech = useSpeech();
-  const pecs = state.pecsMode || !speech.available;
-  const compEmoji = COMPANION_EMOJI[state.companionType] || "🐢";
-
-  // Speak companion text whenever it changes
-  useEffect(() => { if (text) speak(text); }, [text]);
-
+/* ============================ CANVAS BG ============================ */
+function OceanBackground({ reduced, highContrast }) {
+  const ref = useRef(null);
   useEffect(() => {
-    const greeting = `Hi ${state.childName}! I've been waiting for you! Ready to explore the ocean?`;
-    setText(greeting);
-    setState(prev => { const ns = { ...prev, totalSessions: prev.totalSessions + 1 }; saveState(ns); return ns; });
-    const t = setTimeout(()=> newTarget(), 3400);
-    return ()=> { clearTimeout(t); window.speechSynthesis && window.speechSynthesis.cancel(); };
-  // eslint-disable-next-line
-  }, []);
-
-  function newTarget() {
-    const w = WORD_BANK[Math.floor(Math.random()*WORD_BANK.length)];
-    setTarget(w); setMood("WAITING"); setText(buildPrompt(state.communicationLevel, w));
-  }
-
-  function recordAttempt(word, mastered) {
-    setState(prev => {
-      const wa = prev.wordsAttempted.includes(word) ? prev.wordsAttempted : [...prev.wordsAttempted, word];
-      const wm = mastered && !prev.wordsMastered.includes(word) ? [...prev.wordsMastered, word] : prev.wordsMastered;
-      const hist = [...prev.sessionHistory];
-      const today = todayStr();
-      const idx = hist.findIndex(h=>h.date===today);
-      if (idx>=0) hist[idx] = { ...hist[idx], attempts: hist[idx].attempts+1 };
-      else hist.push({ date: today, attempts: 1 });
-      const ns = { ...prev, wordsAttempted: wa, wordsMastered: wm, totalAttempts: prev.totalAttempts+1, sessionHistory: hist };
-      saveState(ns); return ns;
-    });
-  }
-  function fire(msg) { setCelebrate(msg); setTimeout(()=>setCelebrate(null), 1600); }
-
-  function evaluate(said) {
-    const tier = matchTier(said, target.word);
-    if (tier === "exact") {
-      playCelebration();
-      setMood("CELEBRATING"); setText(`Amazing! You said ${target.word.toUpperCase()}!`);
-      recordAttempt(target.word, true); addReward(setState); fire("⭐ Amazing! ⭐");
-    } else if (tier === "close") {
-      playCelebration();
-      setMood("CELEBRATING"); setText(`So close — great trying! ${target.word}!`);
-      recordAttempt(target.word, false); addReward(setState); fire("💙 Great job! 💙");
-    } else if (tier === "any") {
-      playTap();
-      setMood("ENCOURAGING"); setText(`That's great! Try again! You can do it!`);
-      recordAttempt(target.word, false);
-    } else {
-      playTap();
-      setMood("TEACHING"); setText(`Let's try together. Can you say... ${target.word}?`);
+    const canvas = ref.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let raf, W, H;
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    const nBub = reduced ? 5 : 25;
+    const bubbles = Array.from({length:nBub}, () => ({ x:Math.random()*W, y:Math.random()*H, r:2+Math.random()*(reduced?6:9), s:0.2+Math.random()*(reduced?0.5:1.2), drift:Math.random()*0.5-0.25 }));
+    const rays = reduced ? [] : Array.from({length:6}, (_,i) => ({ x:(i+0.5)*(W/6), w:30+Math.random()*60, off:Math.random()*W, sp:0.15+Math.random()*0.2 }));
+    const fish = reduced ? [] : Array.from({length:8}, () => ({ x:Math.random()*W, y:Math.random()*H, s:0.3+Math.random()*0.7, dir:Math.random()<0.5?-1:1, size:6+Math.random()*10 }));
+    const parts = reduced ? [] : Array.from({length:30}, () => ({ x:Math.random()*W, y:Math.random()*H, r:1+Math.random()*2, ph:Math.random()*Math.PI*2, sp:0.5+Math.random() }));
+    let t = 0;
+    function draw() {
+      t += 0.016;
+      const g = ctx.createLinearGradient(0,0,0,H);
+      if (highContrast) { g.addColorStop(0,'#000814'); g.addColorStop(1,'#001233'); }
+      else { g.addColorStop(0,'#061428'); g.addColorStop(1,'#0d4f7c'); }
+      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+      rays.forEach(r => { const x = (r.x + r.off + t*r.sp*20) % (W+200) - 100; ctx.save(); ctx.globalAlpha=0.03; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+r.w,0); ctx.lineTo(x+r.w*2.2,H); ctx.lineTo(x+r.w*1.2,H); ctx.closePath(); ctx.fill(); ctx.restore(); });
+      parts.forEach(p => { const a = 0.25+0.25*Math.sin(t*p.sp+p.ph); ctx.save(); ctx.globalAlpha=a; ctx.fillStyle='#7fd7e8'; ctx.shadowBlur=8; ctx.shadowColor='#00b4b4'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); ctx.restore(); });
+      fish.forEach(f => { f.x += f.dir*f.s*0.6; if(f.x<-20)f.x=W+20; if(f.x>W+20)f.x=-20; ctx.save(); ctx.globalAlpha=0.18; ctx.fillStyle='#0a2540'; ctx.beginPath(); ctx.moveTo(f.x,f.y); ctx.lineTo(f.x-f.dir*f.size,f.y-f.size/2); ctx.lineTo(f.x-f.dir*f.size,f.y+f.size/2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(f.x-f.dir*f.size,f.y); ctx.lineTo(f.x-f.dir*f.size*1.6,f.y-f.size/2); ctx.lineTo(f.x-f.dir*f.size*1.6,f.y+f.size/2); ctx.closePath(); ctx.fill(); ctx.restore(); });
+      bubbles.forEach(b => { b.y -= b.s; b.x += b.drift; if(b.y<-20){ b.y=H+20; b.x=Math.random()*W; } ctx.save(); ctx.globalAlpha=0.35; ctx.strokeStyle='#c8f0f8'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,7); ctx.stroke(); ctx.fillStyle='rgba(200,240,248,.12)'; ctx.fill(); ctx.restore(); });
+      raf = requestAnimationFrame(draw);
     }
-    setTimeout(newTarget, 3200);
-  }
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, [reduced, highContrast]);
+  return <canvas id="bgCanvas" ref={ref} />;
+}
 
-  function onMic() {
-    if (pecs) return;
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    setMood("LISTENING"); setText("Get ready...");
-    setTimeout(() => {
-      playListening();
-      setText("I'm listening... go ahead!");
-      speech.listen(()=>{}, result => evaluate(result));
-    }, 220);
-  }
+/* ============================ CONFETTI ============================ */
+function Confetti({ go }) {
+  const [pieces, setPieces] = useState([]);
+  useEffect(() => {
+    if (!go) return;
+    const cols = ['#ffd700','#ff6b6b','#00b4b4','#7fd7e8','#22c55e','#c8f0f8'];
+    const p = Array.from({length:40}, (_,i) => ({ id:i+Math.random(), left:Math.random()*100, bg:cols[i%cols.length], delay:Math.random()*0.4, rot:Math.random()*360, round:Math.random()<0.5 }));
+    setPieces(p);
+    const tm = setTimeout(()=>setPieces([]), 2000);
+    return ()=>clearTimeout(tm);
+  }, [go]);
+  return pieces.map(p => <div key={p.id} className="confetti-piece" style={{ left:p.left+'%', top:'-20px', background:p.bg, animationDelay:p.delay+'s', transform:`rotate(${p.rot}deg)`, borderRadius: p.round?'50%':'2px' }} />);
+}
 
-  const happy = mood === "CELEBRATING";
+/* ============================ MATCHING ============================ */
+function matchTier(said, target) {
+  if (!said) return 'silence';
+  const s = said.toLowerCase().trim();
+  const t = String(target).toLowerCase().trim();
+  if (s === t) return 'exact';
+  if (s.includes(t) || t.includes(s)) return 'close';
+  const tWords = t.split(/\s+/);
+  if (tWords.some(w => w.length>2 && s.includes(w))) return 'close';
+  if (t.length>=3 && s.length>=2 && s.slice(0,3)===t.slice(0,3)) return 'close';
+  return 'any';
+}
+
+/* ============================ SHARED MIC PANEL ============================ */
+function MicPanel({ st, prompt, onResult, onSkip, pecsCards }) {
+  const { available, listen, micError } = useSpeech();
+  const [phase, setPhase] = useState('idle');
+  const start = () => {
+    playListening(); setPhase('ready');
+    setTimeout(() => { setPhase('listening'); listen(said=>onResult(said), ()=>setPhase('idle')); }, 600);
+  };
+  const usePecs = st.pecsMode || !available;
   return (
-    <div style={{height:'100%',position:'relative'}}>
-      <div className="topbar">
-        <div className="badge">Hi {state.childName}! 👋</div>
-        <div className="badge" onClick={openAquarium} style={{cursor:'pointer'}}>🐟 {state.aquarium.length} friends</div>
-      </div>
-
-      <div style={{position:'absolute',top:'16%',left:0,right:0,bottom:'120px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',padding:'0 16px'}}>
-        <div className={"speech"+(mood==="LISTENING"?" listening":"")}>
-          {text}
-          {mood==="LISTENING" && <div className="wave">{[...Array(7)].map((_,i)=><i key={i} style={{animationDelay:(i*0.1)+"s"}}/>)}</div>}
+    <div className="center" style={{gap:16}}>
+      <div className="speech-bubble">{prompt}</div>
+      {!usePecs && phase==='idle' && <button className="mic-btn" onClick={start}>🎤</button>}
+      {phase==='ready' && <div className="badge" style={{fontSize:22,padding:'18px 30px'}}>Get ready… 🎤</div>}
+      {phase==='listening' && (
+        <div className="center" style={{gap:10}}>
+          <button className="mic-btn listening">🎤</button>
+          <div className="waveform">{[0,1,2,3,4,5,6].map(i=><span key={i} style={{animationDelay:(i*0.1)+'s'}} />)}</div>
+          <div className="muted">I'm listening… go ahead!</div>
         </div>
-        <div className={"companion"+(happy?" happy":"")}>{compEmoji}</div>
-
-        {pecs && (mood==="WAITING"||mood==="TEACHING"||mood==="ENCOURAGING") && (
-          <div className="pecs-grid" style={{marginTop:18}}>
-            {WORD_BANK.slice(0,6).map(w=>(
-              <div key={w.word} className="pecs" onClick={()=>{ playTap(); evaluate(w.word); }}>
-                <div className="e">{w.emoji}</div><div className="t">{w.word}</div>
-              </div>
-            ))}
-          </div>
-        )}
-        {speech.micError && (
-          <div style={{marginTop:10,background:'rgba(255,80,80,0.18)',border:'1px solid #ff6b6b',borderRadius:12,padding:'8px 14px',color:'#ffdddd',fontSize:'0.85rem',maxWidth:320,textAlign:'center'}}>
-            🎤 {speech.micError}
-          </div>
-        )}
-      </div>
-
-      <div className="bottombar">
-        <button className="actbtn" onClick={()=>{ playTap(); openGame('feed'); }}>🐬<span>Feed</span></button>
-        <button className="actbtn" onClick={()=>{ playTap(); openGame('bubble'); }}>🫧<span>Pop</span></button>
-        <button className="actbtn" onClick={()=>{ playTap(); openGame('find'); }}>🐢<span>Find</span></button>
-        <button className="actbtn" onClick={()=>{ playTap(); openGame('name'); }}>🦑<span>Name</span></button>
-        {!pecs && <button className={"actbtn mic"+(mood==="LISTENING"?" on":"")} onClick={onMic}>🎤<span>Speak</span></button>}
-        <button className="actbtn" onClick={openParent}>🔒<span>Parent</span></button>
-      </div>
-
-      {celebrate && <Celebration text={celebrate} />}
-    </div>
-  );
-}
-
-/* ---------------- Mini Game shell ---------------- */
-function GameShell({ title, children, onClose }) {
-  return (
-    <div className="overlay">
-      <div className="panel modal scroll" style={{position:'relative'}}>
-        <button className="btn ghost sm" style={{position:'absolute',top:14,right:14,minHeight:40,padding:'6px 14px'}} onClick={onClose}>✕</button>
-        <h2 style={{textAlign:'center'}}>{title}</h2>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/* Game 1: Feed the Dolphin */
-function FeedGame({ state, onReward, onClose }) {
-  const foods = [{w:"fish",e:"🐟"},{w:"seaweed",e:"🌿"},{w:"crab",e:"🦀"},{w:"shrimp",e:"🦐"}];
-  const [round, setRound] = useState(0);
-  const target = [foods[0].w, foods[3].w, foods[1].w];
-  const [msg, setMsg] = useState(null);
-  const [happy, setHappy] = useState(false);
-  const speech = useSpeech();
-  const pecs = state.pecsMode || !speech.available;
-  const cur = target[round];
-  const curFood = foods.find(f=>f.w===cur);
-  const prompt = `What should we feed Dolphin? Can you say... ${cur}?`;
-  useEffect(() => { speak(prompt); }, [round]);
-  function pick(w) {
-    const tier = matchTier(w, cur);
-    if (tier==="exact" || tier==="close") {
-      playCelebration(); setHappy(true); celebrateInline(setMsg, "Yum! 🐬");
-      speak("Yum! The dolphin loves it!");
-      setTimeout(()=>{ setHappy(false);
-        if (round < 2) setRound(r=>r+1);
-        else { onReward(); celebrateInline(setMsg,"⭐ All fed! New friend! ⭐"); speak("Amazing! You fed the dolphin! You earned a new friend!"); setTimeout(onClose,1500); }
-      }, 1100);
-    } else { playTap(); celebrateInline(setMsg, "Try again! 💙"); speak("Try again! You can do it!"); }
-  }
-  function mic(){ if(window.speechSynthesis)window.speechSynthesis.cancel(); setTimeout(()=>{ playListening(); speech.listen(()=>{}, r=>pick(r||"")); },220); }
-  return (
-    <GameShell title="🐬 Feed the Dolphin" onClose={onClose}>
-      <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 3</div>
-      <div className={"companion"+(happy?" happy":"")} style={{fontSize:90,textAlign:'center'}}>🐬</div>
-      <div className="speech" style={{margin:'12px auto'}}>{prompt} {curFood.e}</div>
-      <div className="pill-grid">
-        {foods.map(f=><div key={f.w} className="gameopt" onClick={()=>{ playTap(); pick(f.w); }}>{f.e}<span>{f.w}</span></div>)}
-      </div>
-      {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
-      {msg && <Celebration text={msg} />}
-    </GameShell>
-  );
-}
-
-/* Game 2: Bubble Pop */
-function BubbleGame({ state, onReward, onClose }) {
-  const items = [{w:"blue",c:"#3b82f6"},{w:"red",c:"#ef4444"},{w:"green",c:"#22c55e"},{w:"yellow",c:"#eab308"},{w:"one",c:"#a855f7"}];
-  const [round, setRound] = useState(0);
-  const [msg, setMsg] = useState(null);
-  const speech = useSpeech();
-  const pecs = state.pecsMode || !speech.available;
-  const cur = items[round % items.length];
-  useEffect(() => { speak(`Pop the ${cur.w} bubble! Say ${cur.w}!`); }, [round]);
-  function pop(w) {
-    if (w===cur.w) { playCelebration(); celebrateInline(setMsg,"Pop! 🫧"); speak("Pop! Great job!");
-      setTimeout(()=>{ if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ All popped! ⭐"); speak("Amazing! You popped all the bubbles!"); setTimeout(onClose,1500);} },1000);
-    } else { playTap(); celebrateInline(setMsg,"Try the "+cur.w+"! 💙"); speak("Try the "+cur.w+" bubble!"); }
-  }
-  function mic(){ if(window.speechSynthesis)window.speechSynthesis.cancel(); setTimeout(()=>{ playListening(); speech.listen(()=>{}, r=>{ const said=(r||""); const hit=items.find(i=>said.includes(i.w)); pop(hit?hit.w:said); }); },220); }
-  return (
-    <GameShell title="🫧 Bubble Pop" onClose={onClose}>
-      <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 5</div>
-      <div className="speech" style={{margin:'10px auto'}}>Pop the {cur.w.toUpperCase()} bubble! Say {cur.w.toUpperCase()}!</div>
-      <div className="pill-grid">
-        {items.map(it=>(
-          <div key={it.w} className="gameopt" style={{background:it.c,color:'#fff',borderRadius:'50%',width:110,height:110,margin:'0 auto'}} onClick={()=>{ playPop(); pop(it.w); }}>
-            🫧<span>{it.w}</span>
-          </div>
-        ))}
-      </div>
-      {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
-      {msg && <Celebration text={msg} />}
-    </GameShell>
-  );
-}
-
-/* Game 3: Find the Turtle */
-function FindGame({ state, onReward, onClose }) {
-  const spots = [{w:"coral",e:"🪸"},{w:"rock",e:"🪨"},{w:"seaweed",e:"🌿"}];
-  const [round, setRound] = useState(0);
-  const [hide, setHide] = useState(()=>Math.floor(Math.random()*3));
-  const [msg, setMsg] = useState(null);
-  const [found, setFound] = useState(false);
-  const speech = useSpeech();
-  const pecs = state.pecsMode || !speech.available;
-  useEffect(() => { speak(`The turtle is hiding! Can you look behind the ${spots[hide].w}?`); }, [round, hide]);
-  function pick(i) {
-    if (i===hide) { playCelebration(); setFound(true); celebrateInline(setMsg,"Found you! 🐢"); speak("You found the turtle! Brilliant!");
-      setTimeout(()=>{ setFound(false);
-        if (round<2) { setRound(r=>r+1); setHide(Math.floor(Math.random()*3)); }
-        else { onReward(); celebrateInline(setMsg,"⭐ Turtle master! ⭐"); speak("Amazing! You are a turtle master!"); setTimeout(onClose,1500); }
-      },1100);
-    } else { playTap(); celebrateInline(setMsg,"Look somewhere else! 💙"); speak("Not there! Look somewhere else!"); }
-  }
-  function mic(){ if(window.speechSynthesis)window.speechSynthesis.cancel(); setTimeout(()=>{ playListening(); speech.listen(()=>{}, r=>{ const s=spots.findIndex(x=>(r||"").includes(x.w)); if(s>=0)pick(s); else { playTap(); celebrateInline(setMsg,"Try again! 💙"); } }); },220); }
-  return (
-    <GameShell title="🐢 Find the Turtle" onClose={onClose}>
-      <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 3</div>
-      <div className="speech" style={{margin:'10px auto'}}>The turtle is hiding... can you look BEHIND the {spots[hide].w.toUpperCase()}?</div>
-      <div className="pill-grid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
-        {spots.map((s,i)=>(
-          <div key={s.w} className="gameopt" onClick={()=>{ playTap(); pick(i); }}>{found&&i===hide?"🐢":s.e}<span>{s.w}</span></div>
-        ))}
-      </div>
-      {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
-      {msg && <Celebration text={msg} />}
-    </GameShell>
-  );
-}
-
-/* Game 4: Name the Animal */
-function NameGame({ state, onReward, onClose }) {
-  const animals = [
-    {w:"octopus",e:"🐙",fact:"An octopus has eight arms!"},
-    {w:"whale",e:"🐋",fact:"Whales are the biggest animals on Earth!"},
-    {w:"shark",e:"🦈",fact:"Sharks have lots of teeth!"},
-    {w:"crab",e:"🦀",fact:"Crabs walk sideways!"},
-    {w:"seahorse",e:"🦄",fact:"Daddy seahorses carry the babies!"}
-  ];
-  const [round, setRound] = useState(0);
-  const [msg, setMsg] = useState(null);
-  const [showFact, setShowFact] = useState(false);
-  const speech = useSpeech();
-  const pecs = state.pecsMode || !speech.available;
-  const cur = animals[round];
-  const opts = [cur, animals[(round+1)%5], animals[(round+2)%5]];
-  useEffect(() => { speak("Look who's visiting! Who is this?"); }, [round]);
-  function pick(w) {
-    if (w===cur.w) { playCelebration(); setShowFact(true); celebrateInline(setMsg,"Yes! ⭐"); speak("Yes! " + cur.fact);
-      setTimeout(()=>{ setShowFact(false);
-        if (round<4) setRound(r=>r+1); else { onReward(); celebrateInline(setMsg,"⭐ Animal expert! ⭐"); speak("You are an animal expert! Amazing!"); setTimeout(onClose,1500);}
-      },1900);
-    } else { playTap(); celebrateInline(setMsg,"Try again! 💙"); speak("Try again! You can do it!"); }
-  }
-  function mic(){ if(window.speechSynthesis)window.speechSynthesis.cancel(); setTimeout(()=>{ playListening(); speech.listen(()=>{}, r=>{ const said=(r||""); const hit=animals.find(a=>said.includes(a.w)); pick(hit?hit.w:said); }); },220); }
-  return (
-    <GameShell title="🦑 Name the Animal" onClose={onClose}>
-      <div className="sub" style={{textAlign:'center'}}>Round {round+1} of 5</div>
-      <div className="companion" style={{fontSize:90,textAlign:'center'}}>{cur.e}</div>
-      <div className="speech" style={{margin:'12px auto'}}>{showFact ? cur.fact+" 🌟" : "Look who's visiting! Who is this?"}</div>
-      <div className="pill-grid" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
-        {opts.map(o=><div key={o.w} className="gameopt" onClick={()=>{ playTap(); pick(o.w); }}>{o.e}<span>{o.w}</span></div>)}
-      </div>
-      {!pecs && <div style={{textAlign:'center',marginTop:14}}><button className="btn coral sm" onClick={mic}>🎤 Speak</button></div>}
-      {msg && <Celebration text={msg} />}
-    </GameShell>
-  );
-}
-
-/* ---------------- Aquarium ---------------- */
-function Aquarium({ state, onClose }) {
-  return (
-    <div className="overlay">
-      <div className="panel modal scroll" style={{position:'relative'}}>
-        <button className="btn ghost sm" style={{position:'absolute',top:14,right:14,minHeight:40,padding:'6px 14px'}} onClick={onClose}>✕</button>
-        <h2 style={{textAlign:'center'}}>🌊 Living Aquarium</h2>
-        <div className="sub" style={{textAlign:'center',fontSize:20,color:'var(--gold)',fontWeight:800}}>
-          Your Ocean Family: {state.aquarium.length} Friends! 🌊
-        </div>
-        <div className="crt-grid">
-          {state.aquarium.map((c,i)=>(
-            <div key={i} className="crt">
-              <div className="e">{c.emoji}</div>
-              <div className="n">{c.name}</div>
-              <div className="d">Collected: {c.date}</div>
+      )}
+      {usePecs && (
+        <div className="pecs-grid">
+          {pecsCards.map((c,i) => (
+            <div key={i} className="pecs-card" style={c.style} onClick={()=>{playTap();onResult(c.word);}}>
+              {c.emoji && <span className="pe">{c.emoji}</span>}<span className="pl">{c.label||c.word}</span>
             </div>
           ))}
         </div>
+      )}
+      {micError && <div className="mic-error">{micError}</div>}
+      <button className="btn ghost" onClick={onSkip}>Skip / Next →</button>
+    </div>
+  );
+}
+
+/* ============================ APP ============================ */
+function App() {
+  const [st, setSt] = useState(loadState);
+  const [screen, setScreen] = useState(() => loadState().setupDone ? 'world' : 'welcome');
+  const [game, setGame] = useState(null);
+  const update = useCallback((patch) => setSt(prev => { const next = typeof patch==='function' ? patch(prev) : {...prev, ...patch}; saveState(next); return next; }), []);
+
+  useEffect(() => { QUIET = st.quietMode; NO_SUDDEN = st.noSuddenSounds; }, [st.quietMode, st.noSuddenSounds]);
+  useEffect(() => { document.body.classList.toggle('high-contrast', st.highContrast); document.body.classList.toggle('no-anim', st.sensoryMode); }, [st.highContrast, st.sensoryMode]);
+
+  return (
+    <div className={"app-root"+(st.highContrast?' high-contrast':'')}>
+      <OceanBackground reduced={st.sensoryMode} highContrast={st.highContrast} />
+      <div className="layer">
+        {screen==='welcome' && <Welcome onChild={()=>setScreen(st.setupDone?'world':'wizard')} onParent={()=>setScreen('gate')} />}
+        {screen==='wizard' && <Wizard st={st} update={update} onDone={()=>setScreen('world')} />}
+        {screen==='world' && <World st={st} update={update} game={game} setGame={setGame} goParent={()=>setScreen('gate')} />}
+        {screen==='gate' && <PinGate onPass={(which)=>setScreen(which==='alt'?'therapist':'parent')} onCancel={()=>setScreen(st.setupDone?'world':'welcome')} />}
+        {screen==='parent' && <ParentDashboard st={st} update={update} onExit={()=>setScreen(st.setupDone?'world':'welcome')} onTherapist={()=>setScreen('therapist')} />}
+        {screen==='therapist' && <TherapistDashboard st={st} update={update} onExit={()=>setScreen('parent')} />}
       </div>
     </div>
   );
 }
 
-/* ---------------- Parent Dashboard ---------------- */
-function ProgressChart({ history }) {
-  const ref = useRef();
-  useEffect(() => {
-    const c = ref.current; if (!c) return;
-    const ctx = c.getContext('2d'); const W=c.width=c.offsetWidth, H=c.height=200;
-    ctx.clearRect(0,0,W,H);
-    const days = [];
-    for (let i=6;i>=0;i--){ const dt=new Date(); dt.setDate(dt.getDate()-i); const s=dt.toISOString().slice(0,10);
-      const h=history.find(x=>x.date===s); days.push({ label:s.slice(5), val:h?h.attempts:0 }); }
-    const max = Math.max(1, ...days.map(d=>d.val));
-    const bw = W/days.length;
-    days.forEach((d,i)=>{
-      const bh = (d.val/max)*(H-50);
-      const grd = ctx.createLinearGradient(0,H-bh-30,0,H-30);
-      grd.addColorStop(0,'#7fd7e8'); grd.addColorStop(1,'#00a8a8');
-      ctx.fillStyle=grd;
-      ctx.fillRect(i*bw+8, H-bh-30, bw-16, bh);
-      ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font='13px sans-serif'; ctx.textAlign='center';
-      ctx.fillText(d.val, i*bw+bw/2, H-bh-36);
-      ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='10px sans-serif';
-      ctx.fillText(d.label, i*bw+bw/2, H-10);
-    });
-  }, [history]);
-  return <canvas ref={ref} style={{width:'100%',height:200,display:'block'}} />;
+/* ============================ WELCOME ============================ */
+function Welcome({ onChild, onParent }) {
+  useEffect(()=>{ const tm=setTimeout(()=>{ try{ window.speechSynthesis && window.speechSynthesis.getVoices(); }catch(e){} },300); return ()=>clearTimeout(tm); },[]);
+  return (
+    <div className="center" style={{minHeight:'100vh', padding:24}}>
+      <h1 className="glow-title">🌊 Oral</h1>
+      <p className="tagline">A magical underwater friendship that quietly teaches communication.</p>
+      <div className="center" style={{gap:16, width:'100%', maxWidth:360}}>
+        <button className="btn gold" style={{width:'100%', fontSize:24, minHeight:68}} onClick={()=>{playTap();onChild();}}>Start Adventure 🐢</button>
+        <button className="btn ghost" style={{width:'100%'}} onClick={()=>{playTap();onParent();}}>Parent / Therapist 🔒</button>
+      </div>
+    </div>
+  );
 }
 
-function ParentDash({ state, setState, onClose }) {
-  const [pin, setPin] = useState("");
-  const [authed, setAuthed] = useState(false);
-  const [tab, setTab] = useState("Overview");
-  function key(n){ const np=(pin+n).slice(0,4); setPin(np); if(np.length===4){ if(np==="1234") setAuthed(true); else setTimeout(()=>setPin(""),300); } }
+/* ============================ WIZARD ============================ */
+function Wizard({ st, update, onDone }) {
+  const [step, setStep] = useState(1);
+  const [d, setD] = useState({
+    childName: st.childName, childAge: st.childAge, diagnosisFlags: [...st.diagnosisFlags],
+    communicationLevel: st.communicationLevel, interests: [...st.interests],
+    sensoryMode: st.sensoryMode, quietMode: st.quietMode, noSuddenSounds: st.noSuddenSounds,
+    highContrast: st.highContrast, sessionTimeLimit: st.sessionTimeLimit,
+    companionName: st.companionName||"Shelly", companionType: st.companionType, personality: st.personality, voiceMale: st.voiceMale
+  });
+  const band = ageBandFor(d.childAge);
+  const set = (p)=>setD(prev=>({...prev,...p}));
+  const toggleArr = (key, val) => set({[key]: d[key].includes(val) ? d[key].filter(x=>x!==val) : [...d[key], val]});
+  const finish = () => { update({...d, ageBand: band, setupDone:true, companionName: d.companionName||"Shelly"}); playReward(); onDone(); };
+  const next = () => { playTap(); setStep(s=>Math.min(5,s+1)); };
+  const back = () => { playTap(); setStep(s=>Math.max(1,s-1)); };
+  const diagOpts = ["Autism Spectrum Disorder","Speech Delay","Childhood Apraxia of Speech","Limited verbal","Emerging communicator"];
+  const commOpts = ["Uses sounds, gestures, or pointing only","Uses single words","Uses 2–3 word phrases","Uses short sentences (4–5 words)","Has conversational language but struggles socially"];
+  return (
+    <div className="scroll-pad">
+      <div className="row" style={{justifyContent:'center', marginBottom:16}}>{[1,2,3,4,5].map(n => <div key={n} style={{width:34,height:8,borderRadius:4,background:n<=step?'var(--gold)':'rgba(255,255,255,.2)'}} />)}</div>
+      <h2 className="sect" style={{textAlign:'center'}}>Step {step} of 5</h2>
 
-  if (!authed) return (
-    <div className="overlay">
-      <div className="panel modal" style={{position:'relative',maxWidth:360}}>
-        <button className="btn ghost sm" style={{position:'absolute',top:14,right:14,minHeight:40,padding:'6px 14px'}} onClick={onClose}>✕</button>
-        <h2 style={{textAlign:'center'}}>🔒 Parent Area</h2>
-        <div className="sub" style={{textAlign:'center'}}>Enter PIN (1234)</div>
-        <div className="pin-dots">{[0,1,2,3].map(i=><div key={i} className={pin.length>i?"f":""}/>)}</div>
-        <div className="keypad">
-          {[1,2,3,4,5,6,7,8,9].map(n=><button key={n} onClick={()=>key(""+n)}>{n}</button>)}
-          <button onClick={()=>setPin("")}>↺</button>
-          <button onClick={()=>key("0")}>0</button>
-          <button onClick={()=>setPin(p=>p.slice(0,-1))}>⌫</button>
+      {step===1 && <div className="card">
+        <h3 className="sub">Child Profile</h3>
+        <label className="fld"><span>Child's name</span><input className="input" value={d.childName} onChange={e=>set({childName:e.target.value})} placeholder="e.g. Ellie" /></label>
+        <label className="fld"><span>Age: {d.childAge}</span><input type="range" min="3" max="10" value={d.childAge} style={{width:'100%'}} onChange={e=>set({childAge:+e.target.value})} /></label>
+        <div className="zone-banner">Age band: {BAND_NAMES[band]}</div>
+        <h3 className="sub">Diagnosis flags</h3>
+        <div className="choice-grid">{diagOpts.map(o => <button key={o} className={"choice"+(d.diagnosisFlags.includes(o)?' sel':'')} onClick={()=>{playTap();toggleArr('diagnosisFlags',o);}}>{d.diagnosisFlags.includes(o)?'✅':'⬜'} {o}</button>)}</div>
+      </div>}
+
+      {step===2 && <div className="card">
+        <h3 className="sub">What best describes {d.childName||'your child'}'s communication right now?</h3>
+        <div className="choice-grid">{commOpts.map((o,i) => <button key={i} className={"choice"+(d.communicationLevel===i+1?' sel':'')} onClick={()=>{playTap();set({communicationLevel:i+1});}}><b style={{color:'var(--gold)'}}>{i+1}</b> {o}</button>)}</div>
+      </div>}
+
+      {step===3 && <div className="card">
+        <h3 className="sub">Favourite ocean animals</h3>
+        <div className="choice-grid" style={{gridTemplateColumns:'repeat(3,1fr)'}}>{ANIMAL_OPTS.map(a => <button key={a.k} className={"emoji-card"+(d.interests.includes(a.k)?' sel':'')} onClick={()=>{playTap();toggleArr('interests',a.k);}}><span className="e">{a.e}</span><span className="l">{a.l}</span></button>)}</div>
+        <h3 className="sub">Sensory settings</h3>
+        {[['sensoryMode','Reduced animation mode'],['quietMode','Quiet mode (lower volume)'],['noSuddenSounds','No sudden sounds'],['highContrast','High contrast mode']].map(([k,l]) => (
+          <div className="toggle-row" key={k}><span>{l}</span><div className={"toggle"+(d[k]?' on':'')} onClick={()=>{playTap();set({[k]:!d[k]});}}><div className="knob" /></div></div>
+        ))}
+        <h3 className="sub">Daily session time limit</h3>
+        <div className="row">{[15,20,30,45].map(m => <button key={m} className={"choice"+(d.sessionTimeLimit===m?' sel':'')} style={{flex:1,justifyContent:'center'}} onClick={()=>{playTap();set({sessionTimeLimit:m});}}>{m} min</button>)}</div>
+      </div>}
+
+      {step===4 && <div className="card">
+        <h3 className="sub">Companion name</h3>
+        <label className="fld"><input className="input" value={d.companionName} onChange={e=>set({companionName:e.target.value})} placeholder="Shelly" /></label>
+        <h3 className="sub">Companion type</h3>
+        <div className="choice-grid" style={{gridTemplateColumns:'repeat(3,1fr)'}}>{COMPANION_LIST.map(c => <button key={c.id} className={"emoji-card"+(d.companionType===c.id?' sel':'')} onClick={()=>{playTap();set({companionType:c.id});}}><span className="e">{c.emoji}</span><span className="l">{c.label}</span></button>)}</div>
+        <h3 className="sub">Personality</h3>
+        <div className="row">{[['playful','Playful 🎉'],['calm','Calm 🌿'],['adventurous','Adventurous 🗺️']].map(([k,l]) => <button key={k} className={"choice"+(d.personality===k?' sel':'')} style={{flex:1,justifyContent:'center'}} onClick={()=>{playTap();set({personality:k});}}>{l}</button>)}</div>
+        <h3 className="sub">Voice</h3>
+        <div className="row">{[[false,'Female'],[true,'Male']].map(([v,l]) => <button key={l} className={"choice"+(d.voiceMale===v?' sel':'')} style={{flex:1,justifyContent:'center'}} onClick={()=>{playTap();set({voiceMale:v});speak("Hello "+(d.childName||'friend')+"!",{male:v});}}>{l}</button>)}</div>
+      </div>}
+
+      {step===5 && <div className="card">
+        <h3 className="sub">Your role is to cheer {d.childName||'your child'} on at home!</h3>
+        <div className="tip-card"><div className="tt">⏳ Give time</div><div className="tb">Wait five seconds after asking. The pause gives space to communicate.</div></div>
+        <div className="tip-card"><div className="tt">🎉 Celebrate effort</div><div className="tb">Every sound, point, or attempt is a win. Praise the trying, not just the answer.</div></div>
+        <div className="tip-card"><div className="tt">🛁 Practice in real life</div><div className="tb">Use the same words at bath time and dinner. Real-life practice makes language stick.</div></div>
+        <button className="btn gold" style={{width:'100%', fontSize:24, minHeight:64}} onClick={finish}>Let's go! 🌊</button>
+      </div>}
+
+      <div className="row" style={{marginTop:18}}>
+        {step>1 && <button className="btn ghost" onClick={back}>← Back</button>}
+        <div className="spacer" />
+        {step<5 && <button className="btn" onClick={next} disabled={step===1 && !d.childName.trim()}>Next →</button>}
+      </div>
+    </div>
+  );
+}
+
+/* ============================ STAGE / PROGRESS LOGIC ============================ */
+function recordAttempt(update, { word, success, modality='speech', activity }) {
+  update(prev => {
+    const next = {...prev};
+    next.totalAttempts = (prev.totalAttempts||0) + 1;
+    next.stageProgress = {...prev.stageProgress};
+    next.stageProgress.attempts = (prev.stageProgress.attempts||0)+1;
+    if (!next.stageProgress.activities.includes(activity)) next.stageProgress.activities = [...next.stageProgress.activities, activity];
+    const wa = prev.wordsAttempted.map(w=>({...w}));
+    let entry = wa.find(w => w.word===word);
+    if (!entry) { entry = { word, count:0, successes:0, modality, date:today() }; wa.push(entry); }
+    entry.count++; entry.modality = modality;
+    if (success) { entry.successes++; next.stageProgress.successes=(prev.stageProgress.successes||0)+1; }
+    next.wordsAttempted = wa;
+    if (success && entry.successes>=3 && !prev.wordsMastered.find(m=>m.word===word)) {
+      next.wordsMastered = [...prev.wordsMastered, { word, date:today() }];
+      next.wordsAttempted = wa.filter(w=>w.word!==word);
+      const ml = [...prev.milestones];
+      if ((prev.wordsMastered||[]).length===0) ml.push({label:"First word mastered: "+word, date:today()});
+      next.milestones = ml;
+    }
+    return next;
+  });
+}
+function maybeAdvanceStage(update) {
+  update(prev => {
+    const sp = prev.stageProgress;
+    const opp = sp.attempts||0, succ = sp.successes||0;
+    const ratioOk = opp>=5 && succ/opp >= 0.6;
+    const sessionsOk = (sp.sessions||0) >= 2;
+    const actsOk = (sp.activities||[]).length >= 2;
+    if (ratioOk && sessionsOk && actsOk && prev.stage < 6) {
+      const newStage = prev.stage + 1;
+      const next = {...prev, stage:newStage, stageProgress:{attempts:0,successes:0,sessions:0,activities:[]}};
+      next.milestones = [...prev.milestones, {label:"Reached Stage "+newStage+": "+STAGES[newStage-1].name, date:today()}];
+      const zu = [...prev.zonesUnlocked];
+      ZONES.forEach(z => { if (z.stage>0 && z.stage<=newStage && !zu.includes(z.id)) zu.push(z.id); });
+      next.zonesUnlocked = zu;
+      return next;
+    }
+    return prev;
+  });
+}
+function grantReward(update) {
+  let granted = null;
+  update(prev => {
+    const have = new Set(prev.aquarium.map(a=>a.type));
+    const pool = REWARD_POOL.filter(r=>!have.has(r.type));
+    if (!pool.length) return prev;
+    granted = pool[Math.floor(Math.random()*pool.length)];
+    return {...prev, aquarium:[...prev.aquarium, {...granted, date:today()}], _sessionRewards:(prev._sessionRewards||0)+1};
+  });
+  return granted;
+}
+
+/* ============================ WORLD ============================ */
+function World({ st, update, game, setGame, goParent }) {
+  const [companionMsg, setCompanionMsg] = useState("");
+  const [showAquarium, setShowAquarium] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [rewardModal, setRewardModal] = useState(null);
+  const limitSec = st.sessionTimeLimit*60;
+  const sessionStarted = useRef(false);
+  const goodbyeSaid = useRef(false), warnSaid = useRef(false);
+
+  useEffect(() => {
+    if (sessionStarted.current) return;
+    sessionStarted.current = true;
+    update(prev => ({...prev, totalSessions:(prev.totalSessions||0)+1, stageProgress:{...prev.stageProgress, sessions:(prev.stageProgress.sessions||0)+1}, lastSessionDate:today(), _sessionRewards:0}));
+    const last = (st.sessionHistory||[]).slice(-1)[0];
+    const greet = st.personality==='calm' ? "I'm so happy to see you." : st.personality==='adventurous' ? "Ready for an adventure?" : "Yay, you're here!";
+    let msg = `Hi ${st.childName}! 👋 ${greet}`;
+    if (last && last.summary) msg = `Welcome back, ${st.childName}! 🌊 Last time, ${last.summary} ${greet}`;
+    setCompanionMsg(msg);
+    setTimeout(()=>speak(msg,{male:st.voiceMale}), 500);
+  }, []);
+
+  useEffect(() => { const id = setInterval(()=>setElapsed(e=>e+1), 1000); return ()=>clearInterval(id); }, []);
+  useEffect(() => {
+    if (elapsed === limitSec-300 && !warnSaid.current) { warnSaid.current=true; const m=`Five more minutes, ${st.childName}! Let's have some fun!`; setCompanionMsg(m); speak(m,{male:st.voiceMale}); }
+    if (elapsed >= limitSec && !goodbyeSaid.current) {
+      goodbyeSaid.current = true;
+      const m = `Great work today, ${st.childName}! 🌟 Time for a rest. See you next time!`;
+      setCompanionMsg(m); speak(m,{male:st.voiceMale}); endSession();
+    }
+  }, [elapsed]);
+
+  function endSession() {
+    update(prev => {
+      const sp = prev.stageProgress;
+      const summary = `you played and tried ${sp.attempts||0} words!`;
+      const hist = [...(prev.sessionHistory||[]), { date:today(), duration:Math.max(1,Math.round(elapsed/60)), attempts:sp.attempts||0, successes:sp.successes||0, stage:prev.stage, rewards: prev._sessionRewards||0, summary }];
+      return {...prev, sessionHistory:hist, lastSessionSummary:summary};
+    });
+    maybeAdvanceStage(update);
+  }
+
+  const fmtTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  const nearLimit = elapsed >= limitSec-300;
+
+  const onGameReward = useCallback(() => {
+    const r = grantReward(update);
+    playReward();
+    if (r) { setRewardModal(r); const m = `Wow! You unlocked ${r.name}! 🎉`; setTimeout(()=>speak(m,{male:st.voiceMale}),300); }
+  }, [update, st.voiceMale]);
+
+  const onGameDone = useCallback(() => {
+    maybeAdvanceStage(update);
+    setGame(null);
+    const m = st.personality==='calm' ? "That was lovely. What shall we do now?" : "That was so much fun! Pick something else!";
+    setCompanionMsg(m); speak(m,{male:st.voiceMale});
+  }, [update, st.personality, st.voiceMale]);
+
+  if (showAquarium) return <Aquarium st={st} onBack={()=>setShowAquarium(false)} />;
+  if (game) { const GameComp = GAME_MAP[game]; return <GameComp st={st} update={update} onReward={onGameReward} onDone={onGameDone} onExit={()=>setGame(null)} />; }
+
+  const band = st.ageBand;
+  let nav = [
+    {id:'feed',e:'🐬',l:'Feed'},{id:'pop',e:'🫧',l:'Pop'},{id:'find',e:'🐢',l:'Find'},
+    {id:'name',e:'🦑',l:'Name'},{id:'count',e:'🐚',l:'Count'},{id:'colour',e:'🎨',l:'Colour'},{id:'speak',e:'🎤',l:'Speak'},
+  ];
+  if (band>=2) nav = [...nav, {id:'story',e:'🌊',l:'Story'},{id:'whale',e:'🐳',l:'Help'}];
+  if (band>=3) nav = [...nav, {id:'scenario',e:'🎭',l:'Scenario'}];
+  nav.push({id:'parent',e:'🔒',l:'Parent'});
+
+  const handleNav = (id) => { playTap(); if (id==='parent') return goParent(); setGame(id); };
+
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <div className="badge">Hi {st.childName}! 👋</div>
+        <div className={"badge"+(nearLimit?' warn':'')}>⏱ {fmtTime(elapsed)} / {st.sessionTimeLimit}:00</div>
+        <div className="badge" onClick={()=>{playTap();setShowAquarium(true);}} style={{cursor:'pointer'}}>🐟 {st.aquarium.length} friends</div>
+      </div>
+      <div className="center" style={{minHeight:'100vh', padding:'80px 16px 120px', justifyContent:'flex-end', gap:20}}>
+        <div className="speech-bubble" style={{marginBottom:8}}>{companionMsg}</div>
+        <div className="companion" onClick={()=>{playTap();speak(companionMsg,{male:st.voiceMale});}}>{COMPANIONS[st.companionType]||'🐢'}</div>
+        <div className="muted">{st.companionName} • Stage {st.stage}: {STAGES[st.stage-1].name}</div>
+      </div>
+      <div className="navbar">{nav.map(n => <button key={n.id} className="nav-btn" onClick={()=>handleNav(n.id)}><span className="ne">{n.e}</span>{n.l}</button>)}</div>
+      {rewardModal && (
+        <div className="center" style={{position:'fixed',inset:0,background:'rgba(6,20,40,.92)',zIndex:40,padding:24}} onClick={()=>setRewardModal(null)}>
+          <Confetti go={true} />
+          <div className="card solid center" style={{maxWidth:380,gap:12}}>
+            <div style={{fontSize:90}}>{rewardModal.emoji}</div>
+            <h2 className="glow-title" style={{fontSize:36}}>New Friend!</h2>
+            <div style={{fontSize:24,fontWeight:800}}>{rewardModal.name}</div>
+            <div className="muted" style={{textAlign:'center'}}>{rewardModal.desc}</div>
+            <button className="btn gold" onClick={()=>setRewardModal(null)}>Yay! 🎉</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================ GAME SHELL ============================ */
+function GameShell({ title, emoji, children, onExit, companionLine, st }) {
+  useEffect(()=>{ if(companionLine) setTimeout(()=>speak(companionLine,{male:st.voiceMale}),300); },[companionLine]);
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 18px'}} onClick={()=>{playTap();onExit();}}>← Back</button>
+        <div className="badge">{emoji} {title}</div>
+        <div style={{width:80}} />
+      </div>
+      <div className="scroll-pad center" style={{justifyContent:'flex-start', minHeight:'100vh', paddingTop:80}}>{children}</div>
+    </div>
+  );
+}
+
+function useGameFlow(st, update, onReward, activity, totalRounds) {
+  const [round, setRound] = useState(0);
+  const [done, setDone] = useState(false);
+  const [confetti, setConfetti] = useState(false);
+  const handleTier = (tier, word) => {
+    const success = tier==='exact' || tier==='close';
+    recordAttempt(update, { word, success, modality: st.pecsMode?'touch':'speech', activity });
+    let line;
+    if (tier==='exact') { line = `Perfect! You said "${word}"! 🎉`; playCelebration(); setConfetti(true); }
+    else if (tier==='close') { line = `Great trying! That was so close! 🌟`; playCelebration(); setConfetti(true); }
+    else if (tier==='any') { line = `Lovely sound! Let's try again. You can do it!`; playPop(); }
+    else { line = `Let's try together. ${st.companionName} says it like this!`; }
+    speak(line.replace(/[🎉🌟]/g,''), {male:st.voiceMale});
+    setTimeout(()=>setConfetti(false), 1800);
+    return { success, line };
+  };
+  const nextRound = () => { if (round+1 >= totalRounds) { setDone(true); onReward(); } else setRound(r=>r+1); };
+  return { round, done, confetti, handleTier, nextRound, setDone };
+}
+
+function CompletePanel({ st, onDone, label }) {
+  return (
+    <div className="center" style={{gap:16}}>
+      <div style={{fontSize:80}}>🏆</div>
+      <div className="speech-bubble">{label||`Amazing work, ${st.childName}! You finished! 🎉`}</div>
+      <button className="btn gold" style={{fontSize:22,minHeight:64}} onClick={()=>{playTap();onDone();}}>Done! 🌊</button>
+    </div>
+  );
+}
+
+function bankPecs(st, targetWord, targetEmoji) {
+  const bank = WORD_BANKS[st.stage] || WORD_BANKS[1];
+  const others = bank.filter(b=>b.word!==targetWord).sort(()=>Math.random()-0.5).slice(0,5).map(b=>({word:b.word,emoji:b.emoji}));
+  return [{word:targetWord,emoji:targetEmoji||'⭐'}, ...others].sort(()=>Math.random()-0.5);
+}
+
+/* ============================ GAME 1: FEED ============================ */
+function FeedGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 3;
+  const foods = [{w:"fish",e:"🐟"},{w:"seaweed",e:"🌿"},{w:"crab",e:"🦀"},{w:"shrimp",e:"🦐"}];
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'feed', ROUNDS);
+  const [fb, setFb] = useState("");
+  const target = foods[round % foods.length];
+  const band = st.ageBand;
+  let prompt = `What should we feed the dolphin? Can you say… ${target.w.toUpperCase()}?`;
+  if (band===2) prompt = `The dolphin is hungry! Can you say "${target.w}" and tell me about it?`;
+  if (band===3) prompt = `The dolphin wants something that swims in the sea — what is it? (Say "${target.w}")`;
+  const onResult = (said) => { const r = handleTier(matchTier(said,target.w), target.w); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900); };
+  const cards = foods.map(f=>({word:f.w,emoji:f.e}));
+  return (
+    <GameShell title="Feed the Dolphin" emoji="🐬" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:90}} className="companion">🐬</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 2: BUBBLE POP ============================ */
+function PopGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 5;
+  const sets = {
+    1: [{w:"blue",e:"💙"},{w:"red",e:"❤️"},{w:"green",e:"💚"},{w:"one",e:"1️⃣"},{w:"two",e:"2️⃣"},{w:"three",e:"3️⃣"}],
+    2: [{w:"blue fish",e:"🐟"},{w:"red crab",e:"🦀"},{w:"big whale",e:"🐋"},{w:"circle",e:"⭕"},{w:"star",e:"⭐"},{w:"green turtle",e:"🐢"}],
+    3: [{w:"bright blue",e:"💙"},{w:"tiny fish",e:"🐟"},{w:"giant whale",e:"🐋"},{w:"slippery seal",e:"🦭"},{w:"spiky pufferfish",e:"🐡"},{w:"shiny shell",e:"🐚"}],
+  };
+  const pool = sets[st.ageBand];
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'pop', ROUNDS);
+  const target = pool[round % pool.length];
+  const [fb, setFb] = useState("");
+  const prompt = `Pop the ${target.w.toUpperCase()} bubble! Say ${target.w}!`;
+  const onResult = (said) => { const tier=matchTier(said,target.w); const r = handleTier(tier, target.w); if(tier==='exact'||tier==='close')playPop(); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900); };
+  const cards = pool.map(p=>({word:p.w,emoji:p.e}));
+  return (
+    <GameShell title="Bubble Pop" emoji="🫧" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:70}}>🫧 {target.e} 🫧</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 3: FIND THE TURTLE ============================ */
+function FindGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 3;
+  const spots = {
+    1: [{w:"behind the coral",e:"🪸",say:"behind"},{w:"under the rock",e:"🪨",say:"under"},{w:"in the cave",e:"🕳️",say:"in"}],
+    2: [{w:"next to the shell",e:"🐚",say:"next to"},{w:"between the rocks",e:"🪨",say:"between"},{w:"on the left",e:"⬅️",say:"left"}],
+    3: [{w:"near the big purple rock",e:"🟣",say:"near the rock"},{w:"behind the tall green seaweed",e:"🌿",say:"behind the seaweed"},{w:"under the curvy yellow coral",e:"🪸",say:"under the coral"}],
+  };
+  const pool = spots[st.ageBand];
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'find', ROUNDS);
+  const target = pool[round % pool.length];
+  const [fb, setFb] = useState("");
+  const prompt = `Where is the turtle hiding? Can you look ${target.w}? Say "${target.say}"!`;
+  const onResult = (said) => { const r = handleTier(matchTier(said,target.say), target.say); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900); };
+  const cards = pool.map(p=>({word:p.say,emoji:p.e,label:p.say}));
+  return (
+    <GameShell title="Find the Turtle" emoji="🐢" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:70}}>{target.e} … 🐢?</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 4: NAME THE ANIMAL ============================ */
+function NameGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 5;
+  const animals = {
+    1: [{w:"fish",e:"🐟",fact:"Fish breathe underwater with their gills!"},{w:"turtle",e:"🐢",fact:"Turtles can live for over 100 years!"},{w:"crab",e:"🦀",fact:"Crabs walk sideways!"},{w:"whale",e:"🐋",fact:"Whales are the biggest animals on Earth!"},{w:"octopus",e:"🐙",fact:"An octopus has three hearts!"}],
+    2: [{w:"seahorse",e:"🐚",fact:"Daddy seahorses carry the babies!"},{w:"jellyfish",e:"🪼",fact:"Jellyfish have no brain or bones!"},{w:"pufferfish",e:"🐡",fact:"Pufferfish puff up to stay safe!"},{w:"seal",e:"🦭",fact:"Seals can sleep underwater!"},{w:"squid",e:"🦑",fact:"Squid squirt ink to hide!"}],
+    3: [{w:"manta ray",e:"🐠",fact:"Manta rays can be wider than a car!"},{w:"lobster",e:"🦞",fact:"Lobsters taste with their legs!"},{w:"starfish",e:"⭐",fact:"Starfish can grow back lost arms!"},{w:"dolphin",e:"🐬",fact:"Dolphins call each other by name!"},{w:"shark",e:"🦈",fact:"Sharks never run out of teeth!"}],
+  };
+  const pool = animals[st.ageBand];
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'name', ROUNDS);
+  const target = pool[round % pool.length];
+  const [fb, setFb] = useState("");
+  let prompt = `What is this animal? Can you name it?`;
+  if (st.ageBand===3) prompt = `What do you know about this animal? What is it called?`;
+  const onResult = (said) => { const tier=matchTier(said,target.w); const r = handleTier(tier, target.w); setFb(r.line + (tier!=='silence'?(" Fun fact: "+target.fact):"")); speak(target.fact,{male:st.voiceMale}); setTimeout(()=>{ setFb(""); nextRound(); }, 2400); };
+  const cards = pool.map(p=>({word:p.w,emoji:p.e}));
+  return (
+    <GameShell title="Name the Animal" emoji="🦑" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:90}} className="companion">{target.e}</div>
+        {fb && <div className="badge" style={{fontSize:15,padding:'12px 20px',maxWidth:420,textAlign:'center'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 5: COUNT THE SHELLS ============================ */
+function CountGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 4;
+  const maxBtn = st.ageBand===1 ? 6 : 12;
+  const maxRange = st.ageBand===1 ? 10 : 20;
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'count', ROUNDS);
+  const count = useMemo(()=> 1 + Math.floor(Math.random()*Math.min(maxBtn, maxRange)), [round]);
+  const numberWords = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"];
+  const target = numberWords[count];
+  const [fb, setFb] = useState("");
+  const prompt = `How many shells can you see? Count them and say the number!`;
+  const onResult = (said) => {
+    let tier='silence';
+    if (said) { const s=said.toLowerCase(); tier = (s.includes(target)||s.includes(String(count))) ? 'exact' : 'close'; }
+    const r = handleTier(tier, target); setFb(r.line + (tier==='exact'?'':` It was ${count}!`)); setTimeout(()=>{ setFb(""); nextRound(); }, 2100);
+  };
+  const cards = Array.from({length:maxBtn},(_,i)=>({word:String(i+1),label:String(i+1)}));
+  return (
+    <GameShell title="Count the Shells" emoji="🐚" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:40, maxWidth:340, textAlign:'center', lineHeight:1.4}}>{"🐚 ".repeat(count)}</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 6: HELP THE WHALE ============================ */
+function WhaleGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 3;
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'whale', ROUNDS);
+  const dirs = st.ageBand===3
+    ? [{w:"left then up",say:"left"},{w:"right then down",say:"right"},{w:"up then left",say:"up"}]
+    : [{w:"left",say:"left"},{w:"right",say:"right"},{w:"up",say:"up"}];
+  const target = dirs[round % dirs.length];
+  const [fb, setFb] = useState("");
+  const prompt = st.ageBand===3
+    ? `The whale needs multi-step directions! Should it go ${target.w}? Say the directions!`
+    : `Which way should the whale go to find the treasure? Say "${target.say}"!`;
+  const onResult = (said) => { const r = handleTier(matchTier(said,target.say), target.say); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900); };
+  const cards = [{word:"left",label:"⬅️ left"},{word:"right",label:"➡️ right"},{word:"up",label:"⬆️ up"},{word:"down",label:"⬇️ down"}];
+  return (
+    <GameShell title="Help the Whale" emoji="🐳" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:80}} className="companion">🐳</div>
+        <div style={{fontSize:30}}>⬅️ ⬆️ ➡️ ⬇️</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Round {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 7: COLOUR THE REEF ============================ */
+function ColourGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 4;
+  const colours = [{w:"red",c:"#ff6b6b"},{w:"blue",c:"#3b82f6"},{w:"green",c:"#22c55e"},{w:"yellow",c:"#ffd700"},{w:"purple",c:"#a855f7"},{w:"orange",c:"#fb923c"}];
+  const elements = ["coral","seaweed","shell","fish"];
+  const elEmoji = {coral:'🪸',seaweed:'🌿',shell:'🐚',fish:'🐟'};
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'colour', ROUNDS);
+  const [fills, setFills] = useState({});
+  const [fb, setFb] = useState("");
+  const element = elements[round % elements.length];
+  let prompt = `What colour shall we make the ${element}? Say a colour!`;
+  if (st.ageBand>=2 && round===1) prompt = `If we mix blue and yellow, what colour do we get? Say "green"!`;
+  const onResult = (said) => {
+    const matched = colours.find(c => said && said.toLowerCase().includes(c.w));
+    const tier = matched ? 'exact' : (said ? 'any' : 'silence');
+    const word = matched ? matched.w : (st.ageBand>=2&&round===1?'green':'colour');
+    const r = handleTier(tier, word);
+    if (matched) setFills(f=>({...f,[element]:matched.c}));
+    setFb(r.line + (matched?` The ${element} is ${matched.w} now! 🎨`:'')); setTimeout(()=>{ setFb(""); nextRound(); }, 2000);
+  };
+  const cards = colours.map(c=>({word:c.w,label:c.w,style:{background:c.c,color:'#fff'}}));
+  return (
+    <GameShell title="Colour the Reef" emoji="🎨" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} label={`Beautiful reef, ${st.childName}! 🎨🌊`} /> : (<>
+        <div className="row" style={{justifyContent:'center', gap:16, fontSize:50}}>
+          {elements.map(el => <span key={el} style={{filter:`drop-shadow(0 0 12px ${fills[el]||'transparent'})`, opacity: fills[el]?1:0.5, color:fills[el]}}>{elEmoji[el]}</span>)}
+        </div>
+        {fb && <div className="badge" style={{fontSize:16,padding:'12px 20px',maxWidth:420,textAlign:'center'}}>{fb}</div>}
+        <div className="muted">Colouring the {element} • {round+1} of {ROUNDS}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 8: STORY TIME ============================ */
+function StoryGame({ st, update, onReward, onDone, onExit }) {
+  const TURNS = 5;
+  const scenes = ["🐢🌊","🪸🐠","💎📦","🦈😮","🐙🤝"];
+  const prompts = [
+    "Once upon a time, a little turtle was exploring the deep ocean… What did the turtle see?",
+    "The turtle swam past a colourful coral reef. Who did the turtle meet there?",
+    "Then the turtle found a shiny treasure chest! What was inside?",
+    "Suddenly, a big shape appeared in the water! What happened next?",
+    "The friends all swam home together. How did the story end?"
+  ];
+  const [turn, setTurn] = useState(0);
+  const [done, setDone] = useState(false);
+  const [fb, setFb] = useState("");
+  const [confetti, setConfetti] = useState(false);
+  useEffect(()=>{ setTimeout(()=>speak(prompts[turn],{male:st.voiceMale}),400); },[turn]);
+  const handle = (said) => {
+    const has = !!said;
+    recordAttempt(update, { word: "story turn "+(turn+1), success: has, modality: st.pecsMode?'touch':'speech', activity:'story' });
+    const line = has ? `Ooh, ${said}! And then ${st.companionName} smiled and the story went on… 🌟` : `That's okay! ${st.companionName} says: and then something wonderful happened!`;
+    setFb(line); if(has){ playCelebration(); setConfetti(true); } speak(line.replace(/[🌟]/g,''),{male:st.voiceMale});
+    setTimeout(()=>{ setConfetti(false); setFb(""); if (turn+1>=TURNS) { setDone(true); onReward(); } else setTurn(t=>t+1); }, 2400);
+  };
+  const cards = [{e:'🐠',w:'a fish'},{e:'💎',w:'treasure'},{e:'🐙',w:'an octopus'},{e:'🦈',w:'a shark'},{e:'🪸',w:'coral'},{e:'⭐',w:'a star'}].map(c=>({word:c.w,emoji:c.e}));
+  return (
+    <GameShell title="Story Time" emoji="🌊" onExit={onExit} st={st}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} label={`What a wonderful story, ${st.childName}! 📖🌊`} /> : (<>
+        <div style={{fontSize:64}}>{scenes[turn]}</div>
+        {fb && <div className="badge" style={{fontSize:16,padding:'12px 20px',maxWidth:440,textAlign:'center'}}>{fb}</div>}
+        <div className="muted">Story turn {turn+1} of {TURNS}</div>
+        <MicPanel st={st} prompt={prompts[turn]} onResult={handle} onSkip={()=>{ if(turn+1>=TURNS){setDone(true);onReward();} else setTurn(t=>t+1); }} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ GAME 9: SOCIAL SCENARIO ============================ */
+function ScenarioGame({ st, update, onReward, onDone, onExit }) {
+  const allScenarios = [...SCENARIOS, ...(st.customActivities||[]).filter(a=>a.type==='scenario').map(a=>({title:a.title,lines:a.lines}))];
+  const [picked, setPicked] = useState(null);
+  const [exchange, setExchange] = useState(0);
+  const [done, setDone] = useState(false);
+  const [fb, setFb] = useState("");
+  const [confetti, setConfetti] = useState(false);
+  const EXCHANGES = 4;
+  useEffect(()=>{ if(picked) setTimeout(()=>speak(picked.lines[exchange].replace(/\[CHILD\]/g,st.childName),{male:st.voiceMale}),400); },[picked,exchange]);
+  const handle = (said) => {
+    const has = !!said;
+    recordAttempt(update, { word: picked.title.slice(0,20), success: has, modality: st.pecsMode?'touch':'speech', activity:'scenario' });
+    const line = has ? `That's a wonderful thing to say! ${st.companionName} is proud of you. 🌟` : `It can feel tricky. ${st.companionName} would say: "It's nice to meet you!"`;
+    setFb(line); if(has){ playCelebration(); setConfetti(true); } speak(line.replace(/[🌟]/g,''),{male:st.voiceMale});
+    setTimeout(()=>{ setConfetti(false); setFb(""); if (exchange+1>=EXCHANGES) { setDone(true); onReward(); } else setExchange(e=>e+1); }, 2400);
+  };
+  const cards = ["Hello!","Can I play?","My name is "+st.childName,"Yes please","No thank you","I feel happy"].map(o=>({word:o,label:o}));
+  if (!picked) return (
+    <GameShell title="Social Scenario" emoji="🎭" onExit={onExit} st={st} companionLine="Let's practice talking with people! Pick a scene.">
+      <div className="choice-grid" style={{width:'100%',maxWidth:520}}>{allScenarios.map((s,i)=><button key={i} className="choice" onClick={()=>{playTap();setPicked(s);}}>🎭 {s.title}</button>)}</div>
+    </GameShell>
+  );
+  return (
+    <GameShell title={picked.title} emoji="🎭" onExit={onExit} st={st}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} label={`You practiced so well, ${st.childName}! 🎭🌟`} /> : (<>
+        <div style={{fontSize:64}}>🧒💬</div>
+        {fb && <div className="badge" style={{fontSize:15,padding:'12px 20px',maxWidth:440,textAlign:'center'}}>{fb}</div>}
+        <div className="muted">Exchange {exchange+1} of {EXCHANGES}</div>
+        <MicPanel st={st} prompt={picked.lines[exchange].replace(/\[CHILD\]/g,st.childName)} onResult={handle} onSkip={()=>{ if(exchange+1>=EXCHANGES){setDone(true);onReward();} else setExchange(e=>e+1); }} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+/* ============================ SPEAK (free practice) ============================ */
+function SpeakGame({ st, update, onReward, onDone, onExit }) {
+  const ROUNDS = 5;
+  const bank = useMemo(()=>{ const b=[...(WORD_BANKS[st.stage]||WORD_BANKS[1])]; const cv=(st.customVocabulary||[]).map(w=>({word:w,emoji:'⭐'})); return [...cv,...b].sort(()=>Math.random()-0.5); },[st.stage]);
+  const { round, done, confetti, handleTier, nextRound } = useGameFlow(st, update, onReward, 'speak', ROUNDS);
+  const target = bank[round % bank.length];
+  const [fb, setFb] = useState("");
+  const level = st.communicationLevel;
+  let prompt;
+  if (level===1) prompt = `Can you say… ${target.word.toUpperCase()}? ${st.companionName} will say it first!`;
+  else if (level===2) prompt = `It's a ___ . Can you say "${target.word}"?`;
+  else if (level===3) prompt = `What do you see? Can you say "${target.word}"?`;
+  else if (level===4) prompt = `Tell me about this! Try saying "${target.word}".`;
+  else prompt = `Let's chat! Can you use "${target.word}" in a sentence?`;
+  useEffect(()=>{ if(level===1) setTimeout(()=>speak(target.word,{male:st.voiceMale}),900); },[round]);
+  const onResult = (said) => {
+    let tier = matchTier(said, target.word);
+    if (level===1 && tier==='any') tier='close';
+    const r = handleTier(tier, target.word); setFb(r.line); setTimeout(()=>{ setFb(""); nextRound(); }, 1900);
+  };
+  const cards = bankPecs(st, target.word, target.emoji);
+  return (
+    <GameShell title="Speak Time" emoji="🎤" onExit={onExit} st={st} companionLine={prompt}>
+      <Confetti go={confetti} />
+      {done ? <CompletePanel st={st} onDone={onDone} /> : (<>
+        <div style={{fontSize:90}} className="companion">{target.emoji}</div>
+        {fb && <div className="badge" style={{fontSize:18,padding:'12px 20px'}}>{fb}</div>}
+        <div className="muted">Word {round+1} of {ROUNDS} • Level {level}</div>
+        <MicPanel st={st} prompt={prompt} onResult={onResult} onSkip={()=>{setFb("");nextRound();}} pecsCards={cards} />
+      </>)}
+    </GameShell>
+  );
+}
+
+const GAME_MAP = {
+  feed: FeedGame, pop: PopGame, find: FindGame, name: NameGame, count: CountGame,
+  whale: WhaleGame, colour: ColourGame, story: StoryGame, scenario: ScenarioGame, speak: SpeakGame
+};
+
+/* ============================ AQUARIUM ============================ */
+function Aquarium({ st, onBack }) {
+  const byZone = ZONES.filter(z => st.zonesUnlocked.includes(z.id));
+  const locked = ZONES.filter(z => !st.zonesUnlocked.includes(z.id));
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 18px'}} onClick={()=>{playTap();onBack();}}>← Back</button>
+        <div className="badge">🐟 Aquarium</div>
+        <div style={{width:80}} />
+      </div>
+      <div className="scroll-pad">
+        <h1 className="glow-title" style={{fontSize:30,textAlign:'center'}}>Your Ocean Family: {st.aquarium.length} Friends! 🌊</h1>
+        {byZone.map((z,zi) => {
+          const creatures = st.aquarium.filter((_,i)=> i % byZone.length === zi);
+          return (
+            <div key={z.id}>
+              <div className="zone-banner">{z.emoji} {z.name}{z.id==='kelp_forest'?' — always open':''}</div>
+              <div className="stat-grid">
+                {creatures.map((c,i) => (
+                  <div key={i} className="aq-card">
+                    <div className="ae">{c.emoji}</div>
+                    <div className="an">{c.name}</div>
+                    {c.desc && <div className="ad">{c.desc}</div>}
+                    <div className="ad">Joined {c.date}</div>
+                  </div>
+                ))}
+                {!creatures.length && <div className="muted" style={{padding:12}}>Keep playing to bring friends to this zone!</div>}
+              </div>
+            </div>
+          );
+        })}
+        {locked.map(z => <div key={z.id} className="zone-banner locked">🔒 {z.emoji} {z.name} — unlocks at Stage {z.stage}</div>)}
+      </div>
+    </div>
+  );
+}
+
+/* ============================ PIN GATE ============================ */
+function PinGate({ onPass, onCancel }) {
+  const [pin, setPin] = useState("");
+  const [err, setErr] = useState(false);
+  const press = (dgt) => {
+    playTap();
+    if (pin.length>=4) return;
+    const np = pin+dgt;
+    setPin(np);
+    if (np.length===4) {
+      if (np==="1234") setTimeout(()=>onPass('main'),150);
+      else if (np==="5678") setTimeout(()=>onPass('alt'),150);
+      else { setErr(true); setTimeout(()=>{setPin("");setErr(false);},700); }
+    }
+  };
+  return (
+    <div className="center" style={{minHeight:'100vh',padding:24,gap:24}}>
+      <h2 className="sect">Parent / Therapist</h2>
+      <div className="muted">Parent PIN: 1234 • Therapist PIN: 5678</div>
+      <div className="row" style={{justifyContent:'center'}}>{[0,1,2,3].map(i=><div key={i} className={"pin-dot"+(pin.length>i?' f':'')} style={err?{borderColor:'var(--coral)'}:{}} />)}</div>
+      <div className="keypad">
+        {[1,2,3,4,5,6,7,8,9].map(n=><button key={n} className="key" onClick={()=>press(String(n))}>{n}</button>)}
+        <button className="key" onClick={()=>{playTap();onCancel();}}>✕</button>
+        <button className="key" onClick={()=>press("0")}>0</button>
+        <button className="key" onClick={()=>{playTap();setPin(p=>p.slice(0,-1));}}>⌫</button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================ BAR CHART ============================ */
+function BarChart({ data, labels, height=80, color='#00b4b4' }) {
+  const ref = useRef(null);
+  useEffect(()=>{
+    const c = ref.current; if(!c) return; const ctx=c.getContext('2d');
+    const W=c.width=c.clientWidth, H=c.height=height;
+    ctx.clearRect(0,0,W,H);
+    const max = Math.max(1,...data); const bw = W/data.length;
+    data.forEach((v,i)=>{ const h=(v/max)*(H-16); const x=i*bw+bw*0.15, y=H-h-2, w=bw*0.7; ctx.fillStyle=color; if(ctx.roundRect){ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.fill();}else{ctx.fillRect(x,y,w,h);} });
+  },[JSON.stringify(data),height,color]);
+  return (
+    <div>
+      <canvas ref={ref} style={{width:'100%',height,display:'block'}} />
+      {labels && <div className="row muted" style={{justifyContent:'space-between',fontSize:10,marginTop:2}}>{labels.map((l,i)=><span key={i} style={{flex:1,textAlign:'center'}}>{l}</span>)}</div>}
+    </div>
+  );
+}
+
+/* ============================ PARENT DASHBOARD ============================ */
+function ParentDashboard({ st, update, onExit, onTherapist }) {
+  const [tab, setTab] = useState('overview');
+  const tabs = [['overview','Overview'],['progress','Progress'],['settings','Settings'],['coaching','Coaching'],['vocab','Vocabulary']];
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 18px'}} onClick={onExit}>← Exit</button>
+        <div className="badge">Parent Dashboard</div>
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 14px',fontSize:14}} onClick={onTherapist}>Therapist 🩺</button>
+      </div>
+      <div className="scroll-pad">
+        <div className="tabbar">{tabs.map(([k,l])=><button key={k} className={"tab"+(tab===k?' active':'')} onClick={()=>setTab(k)}>{l}</button>)}</div>
+        {tab==='overview' && <ParentOverview st={st} />}
+        {tab==='progress' && <ParentProgress st={st} />}
+        {tab==='settings' && <ParentSettings st={st} update={update} />}
+        {tab==='coaching' && <ParentCoaching st={st} update={update} />}
+        {tab==='vocab' && <ParentVocab st={st} update={update} />}
+      </div>
+    </div>
+  );
+}
+
+function ParentOverview({ st }) {
+  const todaySess = (st.sessionHistory||[]).filter(s=>s.date===today());
+  const attempts = todaySess.reduce((a,s)=>a+(s.attempts||0),0) || st.stageProgress.attempts;
+  const turns = (st.sessionHistory||[]).slice(-1)[0]?.attempts || st.stageProgress.attempts;
+  const dur = todaySess.reduce((a,s)=>a+(s.duration||0),0);
+  const rewards = todaySess.reduce((a,s)=>a+(s.rewards||0),0);
+  const days = Array.from({length:7},(_,i)=>{ const dt=new Date(); dt.setDate(dt.getDate()-(6-i)); return dt.toISOString().slice(0,10); });
+  const sevenDay = days.map(dd => (st.sessionHistory||[]).filter(s=>s.date===dd).reduce((a,s)=>a+(s.attempts||0),0));
+  const dayLabels = days.map(dd=>['Su','Mo','Tu','We','Th','Fr','Sa'][new Date(dd).getDay()]);
+  const sp = st.stageProgress;
+  const need = Math.max(0, 5 - (sp.attempts||0));
+  const lastSess = (st.sessionHistory||[]).slice(-1)[0];
+  return (<>
+    <div className="zone-banner">{st.childName}, age {st.childAge} • {BAND_NAMES[st.ageBand]}</div>
+    <div className="card" style={{marginBottom:14}}>
+      <div style={{fontWeight:800,fontSize:18}}>Stage {st.stage}: {STAGES[st.stage-1].name}</div>
+      <div className="muted">{STAGES[st.stage-1].desc}</div>
+    </div>
+    <h3 className="sub">Today's session</h3>
+    <div className="stat-grid">
+      <div className="stat"><div className="v">{attempts}</div><div className="k">Words Attempted</div></div>
+      <div className="stat"><div className="v">{st.wordsMastered.length}</div><div className="k">Words Mastered</div></div>
+      <div className="stat"><div className="v">{turns}</div><div className="k">Conversation Turns</div></div>
+      <div className="stat"><div className="v">{dur}m</div><div className="k">Session Duration</div></div>
+      <div className="stat"><div className="v">{rewards}</div><div className="k">Rewards Earned</div></div>
+    </div>
+    <h3 className="sub">Last 7 days — words attempted</h3>
+    <div className="card"><BarChart data={sevenDay} labels={dayLabels} /></div>
+    <h3 className="sub">Last session</h3>
+    <div className="card">{lastSess ? `${lastSess.date}: ${st.childName} ${lastSess.summary} (${lastSess.duration} min, stage ${lastSess.stage})` : "No sessions completed yet. Start an adventure!"}</div>
+    <h3 className="sub">Next milestone</h3>
+    <div className="card">{st.stage<6 ? `${need} more successful attempts (plus 2+ sessions & 2+ activities) to reach Stage ${st.stage+1}: ${STAGES[st.stage].name}` : "Top stage reached! Keep practicing conversations & stories."}</div>
+  </>);
+}
+
+function ParentProgress({ st }) {
+  const mastered = st.wordsMastered||[];
+  const attempting = st.wordsAttempted||[];
+  const allWords = [...mastered.map(m=>m.word), ...attempting.map(a=>a.word)];
+  const mlu = allWords.length ? (allWords.reduce((a,w)=>a+String(w).split(/\s+/).length,0)/allWords.length).toFixed(2) : "0.00";
+  const modalities = {speech:0,touch:0,gesture:0};
+  attempting.forEach(a=>{ const m=a.modality||'speech'; modalities[m]=(modalities[m]||0)+(a.count||1); });
+  const months = Array.from({length:6},(_,i)=>{ const dt=new Date(); dt.setMonth(dt.getMonth()-(5-i)); return dt.toISOString().slice(0,7); });
+  const monthData = months.map(m => (st.sessionHistory||[]).filter(s=>s.date.startsWith(m)).reduce((a,s)=>a+(s.attempts||0),0));
+  const monthLabels = months.map(m=>['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m.slice(5,7)-1]);
+  return (<>
+    <h3 className="sub">Words Mastered ({mastered.length})</h3>
+    <div className="card">{mastered.length? mastered.map((m,i)=><div key={i}>✅ {m.word} <span className="muted">— {m.date}</span></div>) : <span className="muted">None yet — every attempt counts!</span>}</div>
+    <h3 className="sub">Words in Progress</h3>
+    <div className="card">{attempting.length? attempting.map((a,i)=><div key={i}>🔄 {a.word} <span className="muted">({a.successes}/{a.count} successful)</span></div>) : <span className="muted">None in progress</span>}</div>
+    <h3 className="sub">Mean Length of Utterance (MLU)</h3>
+    <div className="card"><span style={{fontSize:30,fontWeight:900,color:'var(--gold)'}}>{mlu}</span> <span className="muted">words per utterance (target average)</span></div>
+    <h3 className="sub">Stage Progression</h3>
+    <div className="card"><div className="timeline">{STAGES.map(s=><div key={s.n} className="step"><div className={"dot"+(s.n<st.stage?' done':'')+(s.n===st.stage?' cur':'')}>{s.n}</div><div className="lbl">{s.name}</div></div>)}</div></div>
+    <h3 className="sub">Communication Modality</h3>
+    <div className="stat-grid">
+      <div className="stat"><div className="v">{modalities.speech}</div><div className="k">Speech</div></div>
+      <div className="stat"><div className="v">{modalities.touch}</div><div className="k">Touch / PECS</div></div>
+      <div className="stat"><div className="v">{modalities.gesture}</div><div className="k">Gesture</div></div>
+    </div>
+    <h3 className="sub">Monthly Attempts</h3>
+    <div className="card"><BarChart data={monthData} labels={monthLabels} color="#ffd700" /></div>
+    <h3 className="sub">Milestone Timeline</h3>
+    <div className="card">{(st.milestones||[]).length ? st.milestones.map((m,i)=><div key={i}>🏅 {m.label} <span className="muted">— {m.date}</span></div>) : <span className="muted">Milestones will appear here as {st.childName} grows!</span>}</div>
+  </>);
+}
+
+function ParentSettings({ st, update }) {
+  const [resetText, setResetText] = useState("");
+  const exportJson = useMemo(()=>JSON.stringify(st,null,2),[st]);
+  const Toggle = ({k,l}) => <div className="toggle-row"><span>{l}</span><div className={"toggle"+(st[k]?' on':'')} onClick={()=>{playTap();update({[k]:!st[k]});}}><div className="knob" /></div></div>;
+  return (<>
+    <h3 className="sub">Child</h3>
+    <label className="fld"><span>Name</span><input className="input" value={st.childName} onChange={e=>update({childName:e.target.value})} /></label>
+    <label className="fld"><span>Age: {st.childAge} ({BAND_NAMES[ageBandFor(st.childAge)]})</span><input type="range" min="3" max="10" value={st.childAge} style={{width:'100%'}} onChange={e=>update({childAge:+e.target.value, ageBand:ageBandFor(+e.target.value)})} /></label>
+    <label className="fld"><span>Communication Level</span><select className="input" value={st.communicationLevel} onChange={e=>update({communicationLevel:+e.target.value})}>{[1,2,3,4,5].map(n=><option key={n} value={n}>Level {n}</option>)}</select></label>
+    <h3 className="sub">Companion</h3>
+    <label className="fld"><span>Companion name</span><input className="input" value={st.companionName} onChange={e=>update({companionName:e.target.value})} /></label>
+    <div className="choice-grid" style={{gridTemplateColumns:'repeat(3,1fr)',marginBottom:14}}>{COMPANION_LIST.map(c=><button key={c.id} className={"emoji-card"+(st.companionType===c.id?' sel':'')} onClick={()=>update({companionType:c.id})}><span className="e">{c.emoji}</span><span className="l">{c.label}</span></button>)}</div>
+    <label className="fld"><span>Session time limit</span><select className="input" value={st.sessionTimeLimit} onChange={e=>update({sessionTimeLimit:+e.target.value})}>{[15,20,30,45].map(m=><option key={m} value={m}>{m} minutes</option>)}</select></label>
+    <h3 className="sub">Sensory & Modes</h3>
+    <div className="card">
+      <Toggle k="pecsMode" l="PECS mode (tap picture cards)" />
+      <Toggle k="sensoryMode" l="Reduced animation / sensory mode" />
+      <Toggle k="quietMode" l="Quiet mode (lower volume)" />
+      <Toggle k="noSuddenSounds" l="No sudden sounds" />
+      <Toggle k="highContrast" l="High contrast mode" />
+    </div>
+    <h3 className="sub">Export Data</h3>
+    <textarea className="input" readOnly value={exportJson} onClick={e=>e.target.select()} />
+    <h3 className="sub">Reset Progress</h3>
+    <div className="card">
+      <div className="muted">Type RESET to erase all data and start over.</div>
+      <input className="input" style={{marginTop:8}} value={resetText} onChange={e=>setResetText(e.target.value)} placeholder="Type RESET" />
+      <button className="btn coral" style={{marginTop:10,width:'100%'}} disabled={resetText!=='RESET'} onClick={()=>{ localStorage.removeItem(KEY); location.reload(); }}>Reset Everything</button>
+    </div>
+  </>);
+}
+
+function ParentCoaching({ st, update }) {
+  const name = st.childName;
+  const week = Math.floor(Date.now()/(7*864e5));
+  const rotated = COACH_TIPS.map((_,i)=>COACH_TIPS[(i+week)%COACH_TIPS.length]);
+  return (<>
+    <div className="zone-banner">Tips for Communication Level {st.communicationLevel} • rotates weekly</div>
+    {rotated.map((t,i)=>(
+      <div className="tip-card" key={i} onClick={()=>{ if(!st.coachingTipsRead.includes(t.t)) update({coachingTipsRead:[...st.coachingTipsRead,t.t]}); }}>
+        <div className="tt">{t.e} {t.t} {st.coachingTipsRead.includes(t.t)?'✓':''}</div>
+        <div className="tb">{t.b.replace(/\[NAME\]/g,name)}</div>
+      </div>
+    ))}
+  </>);
+}
+
+function ParentVocab({ st, update }) {
+  const [word, setWord] = useState("");
+  const add = () => { const w=word.trim().toLowerCase(); if(!w) return; if(!st.customVocabulary.includes(w)) update({customVocabulary:[...st.customVocabulary,w]}); setWord(""); playTap(); };
+  const remove = (w) => update({customVocabulary:st.customVocabulary.filter(x=>x!==w)});
+  const suggested = useMemo(()=>(WORD_BANKS[st.stage]||WORD_BANKS[1]).map(b=>b.word),[st.stage]);
+  const masteredSet = new Set((st.wordsMastered||[]).map(m=>m.word));
+  return (<>
+    <h3 className="sub">Add Custom Target Word</h3>
+    <div className="row"><input className="input" style={{flex:1}} value={word} onChange={e=>setWord(e.target.value)} placeholder="e.g. bubble" onKeyDown={e=>e.key==='Enter'&&add()} /><button className="btn" onClick={add}>Add</button></div>
+    <h3 className="sub">Parent-Added Words ({st.customVocabulary.length})</h3>
+    <div className="card">{st.customVocabulary.length? st.customVocabulary.map(w=><div key={w} className="row" style={{justifyContent:'space-between',padding:'4px 0'}}><span>⭐ {w} {masteredSet.has(w)?'✅ mastered':''}</span><button className="btn ghost" style={{minHeight:36,padding:'4px 12px',fontSize:13}} onClick={()=>remove(w)}>Remove</button></div>) : <span className="muted">No custom words yet</span>}</div>
+    <h3 className="sub">System-Suggested (Stage {st.stage})</h3>
+    <div className="card">{suggested.map(w=><div key={w}>💡 {w} {masteredSet.has(w)?'✅':((st.wordsAttempted||[]).find(a=>a.word===w)?'🔄':'')}</div>)}</div>
+  </>);
+}
+
+/* ============================ THERAPIST DASHBOARD ============================ */
+function TherapistDashboard({ st, update, onExit }) {
+  const [tab, setTab] = useState('overview');
+  const tabs = [['overview','Overview'],['goals','Goals'],['reports','Reports'],['activities','Activities'],['settings','Settings']];
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <div className="topbar">
+        <button className="btn ghost" style={{minHeight:48,padding:'8px 18px'}} onClick={onExit}>← Parent</button>
+        <div className="badge">🩺 Therapist Dashboard</div>
+        <div style={{width:80}} />
+      </div>
+      <div className="scroll-pad">
+        <div className="tabbar">{tabs.map(([k,l])=><button key={k} className={"tab"+(tab===k?' active':'')} onClick={()=>setTab(k)}>{l}</button>)}</div>
+        {tab==='overview' && <TherapistOverview st={st} />}
+        {tab==='goals' && <TherapistGoals st={st} update={update} />}
+        {tab==='reports' && <TherapistReports st={st} />}
+        {tab==='activities' && <TherapistActivities st={st} update={update} />}
+        {tab==='settings' && <TherapistSettings st={st} update={update} />}
+      </div>
+    </div>
+  );
+}
+
+function TherapistOverview({ st }) {
+  const days30 = Array.from({length:30},(_,i)=>{ const dt=new Date(); dt.setDate(dt.getDate()-(29-i)); return dt.toISOString().slice(0,10); });
+  const freq = days30.map(dd => (st.sessionHistory||[]).filter(s=>s.date===dd).length);
+  const daysSince = st.lastSessionDate ? Math.floor((Date.now()-new Date(st.lastSessionDate))/864e5) : 999;
+  const allWords = [...(st.wordsMastered||[]).map(m=>m.word), ...(st.wordsAttempted||[]).map(a=>a.word)];
+  const mlu = allWords.length ? (allWords.reduce((a,w)=>a+String(w).split(/\s+/).length,0)/allWords.length).toFixed(2) : "0.00";
+  const totalAtt = (st.wordsAttempted||[]).reduce((a,w)=>a+(w.count||0),0)+(st.wordsMastered||[]).length;
+  const spontRate = totalAtt? Math.round(((st.wordsMastered||[]).length/totalAtt)*100) : 0;
+  return (<>
+    <div className="zone-banner">{st.childName}, age {st.childAge} • {BAND_NAMES[st.ageBand]}</div>
+    {daysSince>=7 && <div className="mic-error">⚠️ No sessions in {daysSince===999?'a while':daysSince+' days'}. Consider re-engagement strategies.</div>}
+    <div className="card" style={{margin:'12px 0'}}>
+      <div style={{fontWeight:800}}>Stage {st.stage}: {STAGES[st.stage-1].name}</div>
+      <div className="muted">Communication Level {st.communicationLevel}</div>
+    </div>
+    <div className="stat-grid">
+      <div className="stat"><div className="v">{mlu}</div><div className="k">MLU Trend</div></div>
+      <div className="stat"><div className="v">{st.stage}/6</div><div className="k">Stage</div></div>
+      <div className="stat"><div className="v">{spontRate}%</div><div className="k">Mastery Rate</div></div>
+      <div className="stat"><div className="v">{st.totalSessions||0}</div><div className="k">Total Sessions</div></div>
+    </div>
+    <h3 className="sub">Session Frequency (30 days)</h3>
+    <div className="card"><BarChart data={freq} color="#00b4b4" /></div>
+  </>);
+}
+
+function TherapistGoals({ st, update }) {
+  const [d, setD] = useState({description:"",targetStage:st.stage,targetWords:"",deadline:""});
+  const [showReport,setShowReport]=useState(false);
+  const goals = st.therapistGoals||[];
+  const masteredSet = new Set((st.wordsMastered||[]).map(m=>m.word));
+  const addGoal = () => { if(!d.description.trim()) return; const g={id:Date.now(),description:d.description,targetStage:+d.targetStage,targetWords:d.targetWords.split(',').map(s=>s.trim()).filter(Boolean),deadline:d.deadline,notes:"",achieved:false}; update({therapistGoals:[...goals,g]}); setD({description:"",targetStage:st.stage,targetWords:"",deadline:""}); playTap(); };
+  const upd = (id,patch) => update({therapistGoals:goals.map(g=>g.id===id?{...g,...patch}:g)});
+  const del = (id) => update({therapistGoals:goals.filter(g=>g.id!==id)});
+  const report = useMemo(()=> "INDIVIDUAL LEARNING PLAN\n========================\nChild: "+st.childName+" (age "+st.childAge+")\nCurrent Stage: "+st.stage+" ("+STAGES[st.stage-1].name+")\nTherapist: "+(st.therapistName||"—")+"\nReview date: "+(st.goalReviewDate||"—")+"\n\nGOALS:\n"+(goals.length?goals.map((g,i)=>{ const got=g.targetWords.filter(w=>masteredSet.has(w)).length; return (i+1)+". "+g.description+"\n   Target stage: "+g.targetStage+" | Deadline: "+(g.deadline||"—")+"\n   Target words: "+(g.targetWords.join(", ")||"—")+"\n   Progress: "+got+"/"+(g.targetWords.length||0)+" mastered\n   Status: "+(g.achieved?"ACHIEVED":"Active")+"\n   Notes: "+(g.notes||"—"); }).join("\n\n"):"(none)"), [JSON.stringify(goals),st.childName,st.therapistName,st.goalReviewDate]);
+  return (<>
+    <h3 className="sub">Add Goal (ILP)</h3>
+    <div className="card">
+      <label className="fld"><span>Description</span><input className="input" value={d.description} onChange={e=>setD({...d,description:e.target.value})} placeholder="e.g. Produce 10 two-word phrases" /></label>
+      <label className="fld"><span>Target Stage</span><select className="input" value={d.targetStage} onChange={e=>setD({...d,targetStage:e.target.value})}>{STAGES.map(s=><option key={s.n} value={s.n}>Stage {s.n}: {s.name}</option>)}</select></label>
+      <label className="fld"><span>Target Words (comma separated)</span><input className="input" value={d.targetWords} onChange={e=>setD({...d,targetWords:e.target.value})} placeholder="fish, blue fish, more" /></label>
+      <label className="fld"><span>Deadline</span><input className="input" type="date" value={d.deadline} onChange={e=>setD({...d,deadline:e.target.value})} /></label>
+      <button className="btn" style={{width:'100%'}} onClick={addGoal}>Add Goal</button>
+    </div>
+    <h3 className="sub">Current Term Goals ({goals.length})</h3>
+    {goals.map(g=>{ const got=g.targetWords.filter(w=>masteredSet.has(w)).length; const pct=g.targetWords.length?Math.round(got/g.targetWords.length*100):(g.achieved?100:0); return (
+      <div className="card" key={g.id} style={{marginBottom:12}}>
+        <div style={{fontWeight:800}}>{g.description}</div>
+        <div className="muted">Target Stage {g.targetStage} • Deadline {g.deadline||'—'}</div>
+        <div className="progress-bar" style={{margin:'8px 0'}}><div style={{width:pct+'%'}} /></div>
+        <div className="muted">{got}/{g.targetWords.length} target words mastered ({pct}%)</div>
+        <textarea className="input" style={{marginTop:8,minHeight:60}} placeholder="Notes…" value={g.notes} onChange={e=>upd(g.id,{notes:e.target.value})} />
+        <div className="row" style={{marginTop:8}}>
+          <button className={"btn "+(g.achieved?'success':'ghost')} style={{minHeight:44}} onClick={()=>upd(g.id,{achieved:!g.achieved})}>{g.achieved?'✓ Achieved':'Mark Achieved'}</button>
+          <div className="spacer" /><button className="btn coral" style={{minHeight:44}} onClick={()=>del(g.id)}>Delete</button>
         </div>
       </div>
-    </div>
-  );
-
-  const u = (k,v)=>{ const ns={...state,[k]:v}; setState(ns); saveState(ns); };
-  const todayAttempts = (state.sessionHistory.find(h=>h.date===todayStr())||{}).attempts || 0;
-  const tabs = ["Overview","Progress","Settings","Coaching Tips"];
-  const tipsByLevel = {
-    1:["Model the word first, then wait — let your child copy any sound.","Celebrate ALL attempts, even close sounds.","Keep language very simple: one word at a time.","Pair words with gestures and pointing.","Follow your child's lead and interest."],
-    2:["Use fill-in prompts: 'It's a ___ '.","Repeat and expand: 'Fish! Yes, a big blue fish!'","Offer choices: 'Dolphin or turtle?'","Wait 5 seconds after asking a question.","Name things your child looks at."],
-    default:["Ask open questions: 'What do you see?'","Wait 5 seconds after asking a question.","Repeat and expand your child's words.","Offer choices to spark conversation.","Take turns — let your child lead sometimes."]
-  };
-  const tips = tipsByLevel[state.communicationLevel] || tipsByLevel.default;
-
-  return (
-    <div className="overlay">
-      <div className="panel modal scroll" style={{position:'relative',maxWidth:600}}>
-        <button className="btn ghost sm" style={{position:'absolute',top:14,right:14,minHeight:40,padding:'6px 14px'}} onClick={onClose}>✕</button>
-        <h2>Parent Dashboard</h2>
-        <div className="tabs">{tabs.map(t=><div key={t} className={"tab"+(tab===t?" on":"")} onClick={()=>setTab(t)}>{t}</div>)}</div>
-
-        {tab==="Overview" && <>
-          <div className="card" style={{textAlign:'center'}}>
-            <b style={{fontSize:20}}>{state.childName}</b><br/>
-            <span style={{color:'var(--light)'}}>Stage {state.stage}: {STAGE_NAMES[state.stage]}</span>
-          </div>
-          <div className="stat-grid">
-            <div className="stat"><div className="n">{state.wordsAttempted.length}</div><div className="l">Words Attempted</div></div>
-            <div className="stat"><div className="n">{state.wordsMastered.length}</div><div className="l">Words Mastered</div></div>
-            <div className="stat"><div className="n">{Math.max(1,Math.round(state.totalAttempts*0.7))} min</div><div className="l">Session Duration</div></div>
-            <div className="stat"><div className="n">{Math.max(0,state.aquarium.length-3)}</div><div className="l">Rewards Earned</div></div>
-          </div>
-          <label>Conversation Stage</label>
-          <div className="bar-track"><div className="bar-fill" style={{width:Math.min(100,(state.wordsMastered.length/8)*100)+"%"}}/></div>
-          <div className="card"><b>Last session:</b><br/>
-            <small style={{opacity:.85}}>{state.childName} attempted {todayAttempts} words today and is doing wonderfully exploring the ocean. Keep celebrating every try! 💙</small>
-          </div>
-        </>}
-
-        {tab==="Progress" && <>
-          <label>Words Mastered</label>
-          {state.wordsMastered.length ? state.wordsMastered.map(w=>(
-            <div key={w} className="card" style={{padding:'10px 16px'}}>✅ {w}</div>
-          )) : <div className="card"><small style={{opacity:.8}}>No words mastered yet — keep playing!</small></div>}
-          <label>Aquarium</label>
-          <div className="card">🐟 {state.aquarium.length} creatures collected</div>
-          <label>Communication Stage</label>
-          <div className="card" style={{textAlign:'center'}}>
-            <span className="badge" style={{background:'var(--teal)'}}>Stage {state.stage}: {STAGE_NAMES[state.stage]}</span>
-          </div>
-          <label>Attempts per day (last 7 days)</label>
-          <div className="card"><ProgressChart history={state.sessionHistory} /></div>
-        </>}
-
-        {tab==="Settings" && <>
-          <label>Child name</label>
-          <input type="text" value={state.childName} onChange={e=>u('childName',e.target.value)} />
-          <label>Age: {state.childAge}</label>
-          <input type="range" min="3" max="10" value={state.childAge}
-            onChange={e=>{ const a=+e.target.value; const ns={...state,childAge:a,ageBand:ageBandFor(a)}; setState(ns); saveState(ns); }} />
-          <label>Communication level</label>
-          <select value={state.communicationLevel} onChange={e=>u('communicationLevel',+e.target.value)}>
-            {COMM_LEVELS.map((c,i)=><option key={i} value={i+1}>{c}</option>)}
-          </select>
-          <label>Companion name</label>
-          <input type="text" value={state.companionName} onChange={e=>u('companionName',e.target.value)} />
-          <label>Companion type</label>
-          <select value={state.companionType} onChange={e=>u('companionType',e.target.value)}>
-            {Object.keys(COMPANION_EMOJI).map(k=><option key={k} value={k}>{COMPANION_EMOJI[k]} {k}</option>)}
-          </select>
-          <div className="card row" style={{marginTop:14}}>
-            <b>Reduced sensory mode</b>
-            <div className={"toggle"+(state.sensoryMode?" on":"")} onClick={()=>u('sensoryMode',!state.sensoryMode)}><div className="knob"/></div>
-          </div>
-          <div className="card row">
-            <b>Touch / PECS mode</b>
-            <div className={"toggle"+(state.pecsMode?" on":"")} onClick={()=>u('pecsMode',!state.pecsMode)}><div className="knob"/></div>
-          </div>
-          <label>Session time limit</label>
-          <select value={state.sessionLimit||20} onChange={e=>u('sessionLimit',+e.target.value)}>
-            <option value={15}>15 min</option><option value={20}>20 min</option><option value={30}>30 min</option>
-          </select>
-          <button className="btn coral sm" style={{marginTop:18,width:'100%'}} onClick={()=>{
-            if (confirm("Reset all progress? This cannot be undone.")) { localStorage.removeItem('oceanVoices'); location.reload(); }
-          }}>Reset Progress</button>
-        </>}
-
-        {tab==="Coaching Tips" && <>
-          <div className="sub">Tips for: {COMM_LEVELS[state.communicationLevel-1]}</div>
-          {tips.map((t,i)=>(
-            <div key={i} className="card tip"><div className="ic">💡</div><div>{t}</div></div>
-          ))}
-        </>}
-      </div>
-    </div>
-  );
+    );})}
+    {!goals.length && <div className="card muted">No goals yet. Add one above.</div>}
+    <button className="btn gold" style={{width:'100%',marginTop:8}} onClick={()=>setShowReport(s=>!s)}>{showReport?'Hide Report':'Generate Report'}</button>
+    {showReport && <textarea className="input" style={{marginTop:10,minHeight:240}} readOnly value={report} onClick={e=>e.target.select()} />}
+  </>);
 }
 
-/* ---------------- Root App ---------------- */
-function App() {
-  const [state, setState] = useState(loadState);
-  const [screen, setScreen] = useState(state.setupDone ? "world" : "welcome");
-  const [game, setGame] = useState(null);
-  const [showAq, setShowAq] = useState(false);
-  const [showParent, setShowParent] = useState(false);
-  const reward = () => addReward(setState);
-  return (
-    <div className="app">
-      {screen==="welcome" && <Welcome onChild={()=>setScreen(state.setupDone?"world":"wizard")} onParent={()=>setScreen("wizard")} />}
-      {screen==="wizard" && <Wizard state={state} setState={setState} onDone={()=>setScreen("world")} />}
-      {screen==="world" && <World state={state} setState={setState}
-        openGame={setGame} openAquarium={()=>setShowAq(true)} openParent={()=>setShowParent(true)} />}
-
-      {game==="feed" && <FeedGame state={state} onReward={reward} onClose={()=>setGame(null)} />}
-      {game==="bubble" && <BubbleGame state={state} onReward={reward} onClose={()=>setGame(null)} />}
-      {game==="find" && <FindGame state={state} onReward={reward} onClose={()=>setGame(null)} />}
-      {game==="name" && <NameGame state={state} onReward={reward} onClose={()=>setGame(null)} />}
-
-      {showAq && <Aquarium state={state} onClose={()=>setShowAq(false)} />}
-      {showParent && <ParentDash state={state} setState={setState} onClose={()=>setShowParent(false)} />}
+function TherapistReports({ st }) {
+  const [from,setFrom]=useState(""); const [to,setTo]=useState("");
+  const sessions = (st.sessionHistory||[]).filter(s=> (!from||s.date>=from) && (!to||s.date<=to));
+  const text = useMemo(()=> "SESSION REPORT — "+st.childName+"\n"+"=".repeat(34)+"\n"+(sessions.length?sessions.map(s=>`${s.date} | ${s.duration}min | attempts:${s.attempts} successes:${s.successes} stage:${s.stage} rewards:${s.rewards}`).join("\n"):"(no sessions in range)"),[JSON.stringify(sessions),st.childName]);
+  return (<>
+    <h3 className="sub">Filter by Date</h3>
+    <div className="row"><input className="input" type="date" value={from} onChange={e=>setFrom(e.target.value)} /><input className="input" type="date" value={to} onChange={e=>setTo(e.target.value)} /></div>
+    <h3 className="sub">Sessions ({sessions.length})</h3>
+    <div className="card" style={{overflowX:'auto'}}>
+      <table className="rep">
+        <thead><tr><th align="left">Date</th><th>Dur</th><th>Att</th><th>Succ</th><th>Stage</th><th>Rwd</th></tr></thead>
+        <tbody>{sessions.map((s,i)=><tr key={i}><td>{s.date}</td><td align="center">{s.duration}m</td><td align="center">{s.attempts}</td><td align="center">{s.successes}</td><td align="center">{s.stage}</td><td align="center">{s.rewards}</td></tr>)}</tbody>
+      </table>
+      {!sessions.length && <div className="muted" style={{padding:8}}>No sessions in this range.</div>}
     </div>
-  );
+    <h3 className="sub">Speech Attempt Breakdown</h3>
+    <div className="card">{(st.wordsAttempted||[]).length||(st.wordsMastered||[]).length ? (<>{(st.wordsMastered||[]).map((m,i)=><div key={'m'+i}>✅ {m.word} (mastered)</div>)}{(st.wordsAttempted||[]).map((a,i)=><div key={'a'+i}>🔄 {a.word} — {a.successes}/{a.count} ({a.modality})</div>)}</>) : <span className="muted">No attempt data yet.</span>}</div>
+    <h3 className="sub">Export Summary</h3>
+    <textarea className="input" style={{minHeight:200}} readOnly value={text} onClick={e=>e.target.select()} />
+  </>);
 }
 
+function TherapistActivities({ st, update }) {
+  const [vocabName,setVocabName]=useState(""); const [vocabWords,setVocabWords]=useState("");
+  const [scTitle,setScTitle]=useState(""); const [scLines,setScLines]=useState(["","","",""]);
+  const acts = st.customActivities||[];
+  const addVocab = () => { if(!vocabName.trim())return; update({customActivities:[...acts,{id:Date.now(),type:'vocab',name:vocabName,words:vocabWords.split(',').map(s=>s.trim()).filter(Boolean),assigned:false}]}); setVocabName("");setVocabWords("");playTap(); };
+  const addScenario = () => { if(!scTitle.trim())return; update({customActivities:[...acts,{id:Date.now(),type:'scenario',title:scTitle,lines:scLines.map(l=>l||"...")}]}); setScTitle("");setScLines(["","","",""]);playTap(); };
+  const assign = (id) => { const set=acts.find(a=>a.id===id); update({customActivities:acts.map(a=>a.type==='vocab'?{...a,assigned:a.id===id}:a), customVocabulary:[...new Set([...(st.customVocabulary||[]),...set.words])]}); };
+  const del = (id) => update({customActivities:acts.filter(a=>a.id!==id)});
+  return (<>
+    <h3 className="sub">Custom Vocabulary Set</h3>
+    <div className="card">
+      <label className="fld"><span>Set name</span><input className="input" value={vocabName} onChange={e=>setVocabName(e.target.value)} placeholder="e.g. Mealtime words" /></label>
+      <label className="fld"><span>Words (comma separated)</span><input className="input" value={vocabWords} onChange={e=>setVocabWords(e.target.value)} placeholder="spoon, cup, more, all done" /></label>
+      <button className="btn" style={{width:'100%'}} onClick={addVocab}>Save Set</button>
+    </div>
+    {acts.filter(a=>a.type==='vocab').map(a=><div className="card" key={a.id} style={{marginBottom:10}}><div style={{fontWeight:800}}>{a.name} {a.assigned?'✅ assigned':''}</div><div className="muted">{a.words.join(', ')}</div><div className="row" style={{marginTop:8}}><button className="btn ghost" style={{minHeight:42}} onClick={()=>assign(a.id)}>Assign to {st.childName}</button><div className="spacer"/><button className="btn coral" style={{minHeight:42}} onClick={()=>del(a.id)}>Delete</button></div></div>)}
+    <h3 className="sub">Custom Scenario Script</h3>
+    <div className="card">
+      <label className="fld"><span>Title</span><input className="input" value={scTitle} onChange={e=>setScTitle(e.target.value)} placeholder="e.g. Going to the dentist" /></label>
+      {scLines.map((l,i)=><label className="fld" key={i}><span>Line {i+1} (use [CHILD] for name)</span><input className="input" value={l} onChange={e=>{const n=[...scLines];n[i]=e.target.value;setScLines(n);}} /></label>)}
+      <button className="btn" style={{width:'100%'}} onClick={addScenario}>Save Scenario</button>
+    </div>
+    {acts.filter(a=>a.type==='scenario').map(a=><div className="card" key={a.id} style={{marginBottom:10}}><div style={{fontWeight:800}}>🎭 {a.title}</div>{a.lines.map((l,i)=><div className="muted" key={i}>{i+1}. {l}</div>)}<button className="btn coral" style={{minHeight:42,marginTop:8}} onClick={()=>del(a.id)}>Delete</button></div>)}
+    <div className="muted" style={{marginTop:8}}>Saved scenarios appear in the child's Social Scenario game.</div>
+  </>);
+}
+
+function TherapistSettings({ st, update }) {
+  return (<>
+    <label className="fld"><span>Therapist Name (for reports)</span><input className="input" value={st.therapistName} onChange={e=>update({therapistName:e.target.value})} placeholder="e.g. Dr. Rivera, SLP" /></label>
+    <label className="fld"><span>Goal Review Date</span><input className="input" type="date" value={st.goalReviewDate||""} onChange={e=>update({goalReviewDate:e.target.value})} /></label>
+    <label className="fld"><span>Clinical Notes</span><textarea className="input" style={{minHeight:180}} value={st.therapistNotes} onChange={e=>update({therapistNotes:e.target.value})} placeholder="Free-text clinical notes (saved locally)…" /></label>
+    <div className="muted">All therapist data is stored locally on this device only.</div>
+  </>);
+}
+
+/* ============================ MOUNT ============================ */
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
